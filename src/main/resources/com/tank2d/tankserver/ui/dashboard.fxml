@@ -1,0 +1,258 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.geometry.Insets?>
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+<?import javafx.scene.text.Font?>
+
+<BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
+            fx:controller="com.tank2d.masterserver.ui.MasterServerDashboard"
+            prefHeight="700.0" prefWidth="1000.0"
+            style="-fx-background-color: #8ab48f;">
+
+   <!-- Top Section: Server Control -->
+   <top>
+      <VBox spacing="10" style="-fx-background-color: #f4e8c1; -fx-border-color: #704214; -fx-border-width: 0 0 4 0;">
+         <padding>
+            <Insets bottom="15.0" left="15.0" right="15.0" top="15.0" />
+         </padding>
+
+         <Label text="Tank 2D Master Server Dashboard" textFill="#704214">
+            <font>
+               <Font name="System Bold" size="22.0" />
+            </font>
+         </Label>
+
+         <HBox spacing="15" alignment="CENTER_LEFT">
+            <Label text="Port:" textFill="#704214">
+               <font>
+                  <Font name="System Bold" size="12.0" />
+               </font>
+            </Label>
+            <TextField fx:id="txtPort" prefWidth="80.0" text="5000"
+                       style="-fx-background-color: white;
+                              -fx-border-color: #8a6f47;
+                              -fx-border-width: 2;">
+               <font>
+                  <Font size="12.0" />
+               </font>
+            </TextField>
+
+            <Button fx:id="btnStartStop" text="Start Server" onAction="#onStartStopClick"
+                    prefHeight="32.0" prefWidth="120.0"
+                    style="-fx-background-color: #6b9080;
+                           -fx-border-color: #4a6859;
+                           -fx-border-width: 3;
+                           -fx-text-fill: white;">
+               <font>
+                  <Font name="System Bold" size="12.0" />
+               </font>
+            </Button>
+
+            <Region HBox.hgrow="ALWAYS" />
+
+            <Label text="Status:" textFill="#704214">
+               <font>
+                  <Font name="System Bold" size="12.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblServerStatus" text="Stopped" textFill="#c54245">
+               <font>
+                  <Font name="System Bold" size="12.0" />
+               </font>
+            </Label>
+
+            <Label text="Port:" textFill="#704214">
+               <font>
+                  <Font name="System Bold" size="12.0" />
+               </font>
+            </Label>
+            <Label fx:id="lblPort" text="N/A" textFill="#8a6f47">
+               <font>
+                  <Font name="System Bold" size="12.0" />
+               </font>
+            </Label>
+         </HBox>
+      </VBox>
+   </top>
+
+   <!-- Center Section: Main Content -->
+   <center>
+      <HBox spacing="10">
+         <padding>
+            <Insets bottom="10.0" left="10.0" right="10.0" top="10.0" />
+         </padding>
+
+         <!-- Left Side: Statistics and Client List -->
+         <VBox spacing="10" prefWidth="320.0">
+
+            <!-- Statistics Panel -->
+            <VBox spacing="8" style="-fx-background-color: #f4e8c1; -fx-border-color: #704214; -fx-border-width: 3;">
+               <padding>
+                  <Insets bottom="12.0" left="12.0" right="12.0" top="12.0" />
+               </padding>
+
+               <Label text="Server Statistics" textFill="#704214">
+                  <font>
+                     <Font name="System Bold" size="14.0" />
+                  </font>
+               </Label>
+
+               <HBox spacing="15" alignment="CENTER">
+                  <VBox alignment="CENTER" spacing="3">
+                     <Label text="Connected" textFill="#8a6f47">
+                        <font>
+                           <Font size="11.0" />
+                        </font>
+                     </Label>
+                     <Label fx:id="lblTotalClients" text="0" textFill="#6b9080">
+                        <font>
+                           <Font name="System Bold" size="24.0" />
+                        </font>
+                     </Label>
+                  </VBox>
+
+                  <VBox alignment="CENTER" spacing="3">
+                     <Label text="Total Users" textFill="#8a6f47">
+                        <font>
+                           <Font size="11.0" />
+                        </font>
+                     </Label>
+                     <Label fx:id="lblTotalUsers" text="0" textFill="#d4a574">
+                        <font>
+                           <Font name="System Bold" size="24.0" />
+                        </font>
+                     </Label>
+                  </VBox>
+
+                  <VBox alignment="CENTER" spacing="3">
+                     <Label text="Active Rooms" textFill="#8a6f47">
+                        <font>
+                           <Font size="11.0" />
+                        </font>
+                     </Label>
+                     <Label fx:id="lblTotalRooms" text="0" textFill="#c54245">
+                        <font>
+                           <Font name="System Bold" size="24.0" />
+                        </font>
+                     </Label>
+                  </VBox>
+               </HBox>
+            </VBox>
+
+            <!-- Client List -->
+            <VBox spacing="6" VBox.vgrow="ALWAYS">
+               <Label text="Connected Clients" textFill="#704214">
+                  <font>
+                     <Font name="System Bold" size="13.0" />
+                  </font>
+               </Label>
+
+               <TableView fx:id="tblClients" VBox.vgrow="ALWAYS"
+                          style="-fx-background-color: white;
+                                 -fx-border-color: #8a6f47;
+                                 -fx-border-width: 3;">
+                  <columns>
+                     <TableColumn fx:id="colClientIP" prefWidth="100.0" text="IP Address" />
+                     <TableColumn fx:id="colUsername" prefWidth="100.0" text="Username" />
+                     <TableColumn fx:id="colConnectTime" prefWidth="100.0" text="Time" />
+                  </columns>
+               </TableView>
+            </VBox>
+         </VBox>
+
+         <!-- Middle: Room List -->
+         <VBox spacing="10" prefWidth="300.0">
+            <Label text="Active Rooms" textFill="#704214">
+               <font>
+                  <Font name="System Bold" size="13.0" />
+               </font>
+            </Label>
+
+            <TableView fx:id="tblRooms" VBox.vgrow="ALWAYS"
+                       style="-fx-background-color: white;
+                              -fx-border-color: #8a6f47;
+                              -fx-border-width: 3;">
+               <columns>
+                  <TableColumn fx:id="colRoomName" prefWidth="140.0" text="Room Name" />
+                  <TableColumn fx:id="colRoomPlayers" prefWidth="60.0" text="Players" />
+                  <TableColumn fx:id="colRoomStatus" prefWidth="80.0" text="Status" />
+               </columns>
+            </TableView>
+
+            <Button text="Close Selected Room" onAction="#onCloseRoom"
+                    prefHeight="35.0"
+                    style="-fx-background-color: #c54245;
+                           -fx-border-color: #8b2e31;
+                           -fx-border-width: 3;
+                           -fx-text-fill: white;">
+               <font>
+                  <Font name="System Bold" size="12.0" />
+               </font>
+            </Button>
+         </VBox>
+
+         <!-- Right Side: Server Log -->
+         <VBox spacing="10" HBox.hgrow="ALWAYS">
+            <HBox spacing="10" alignment="CENTER_LEFT">
+               <Label text="Server Log" textFill="#704214">
+                  <font>
+                     <Font name="System Bold" size="13.0" />
+                  </font>
+               </Label>
+
+               <Region HBox.hgrow="ALWAYS" />
+
+               <Button text="Clear Log" onAction="#onClearLog"
+                       prefHeight="30.0"
+                       style="-fx-background-color: #d4a574;
+                              -fx-border-color: #a67c52;
+                              -fx-border-width: 3;
+                              -fx-text-fill: white;">
+                  <font>
+                     <Font name="System Bold" size="11.0" />
+                  </font>
+               </Button>
+            </HBox>
+
+            <TextArea fx:id="txtLog" editable="false" wrapText="true" VBox.vgrow="ALWAYS"
+                      style="-fx-control-inner-background: #2c2c2c;
+                             -fx-text-fill: #e0e0e0;
+                             -fx-border-color: #8a6f47;
+                             -fx-border-width: 3;
+                             -fx-font-family: 'Consolas', 'Courier New', monospace;
+                             -fx-font-size: 11;">
+            </TextArea>
+         </VBox>
+      </HBox>
+   </center>
+
+   <!-- Bottom Section: Status Bar -->
+   <bottom>
+      <HBox spacing="10" style="-fx-background-color: #f4e8c1; -fx-border-color: #704214; -fx-border-width: 4 0 0 0;">
+         <padding>
+            <Insets bottom="8.0" left="15.0" right="15.0" top="8.0" />
+         </padding>
+
+         <Label text="🎮 Tank 2D Master Server v1.0" textFill="#704214">
+            <font>
+               <Font name="System Bold" size="11.0" />
+            </font>
+         </Label>
+
+         <Region HBox.hgrow="ALWAYS" />
+
+         <Label fx:id="lblUptime" text="Uptime: 00:00:00" textFill="#8a6f47">
+            <font>
+               <Font size="11.0" />
+            </font>
+         </Label>
+
+         <Label text="© 2025 Tank 2D Team" textFill="#8a6f47">
+            <font>
+               <Font size="11.0" />
+            </font>
+         </Label>
+      </HBox>
+   </bottom>
+</BorderPane>
