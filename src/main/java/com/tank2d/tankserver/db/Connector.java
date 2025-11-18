@@ -1,4 +1,4 @@
-package com.tank2d.masterserver.db;
+package com.tank2d.tankserver.db;
 
 import java.sql.Connection;
 import java.sql.DriverManager;

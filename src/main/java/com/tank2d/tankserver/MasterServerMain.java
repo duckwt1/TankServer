@@ -1,6 +1,6 @@
-package com.tank2d.masterserver;
+package com.tank2d.tankserver;
 
-import com.tank2d.masterserver.core.MasterServer;
+import com.tank2d.tankserver.core.MasterServer;
 import javafx.application.Application;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.Scene;
@@ -10,7 +10,7 @@ public class MasterServerMain extends Application {
 
     @Override
     public void start(Stage stage) throws Exception {
-        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/tank2d/masterserver/ui/dashboard.fxml"));
+        FXMLLoader loader = new FXMLLoader(getClass().getResource("/com/tank2d/tankserver/ui/dashboard.fxml"));
         Scene scene = new Scene(loader.load());
         
         stage.setTitle("Tank2D Master Server Dashboard");

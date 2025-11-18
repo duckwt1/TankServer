@@ -1,6 +1,6 @@
-package com.tank2d.masterserver.core;
+package com.tank2d.tankserver.core;
 
-import com.tank2d.masterserver.db.AccountRepository;
+import com.tank2d.tankserver.db.AccountRepository;
 
 public class AccountManager {
     private static final AccountRepository repo = new AccountRepository();

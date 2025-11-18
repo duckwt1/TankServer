@@ -1,8 +1,8 @@
-package com.tank2d.masterserver.ui;
+package com.tank2d.tankserver.ui;
 
-import com.tank2d.masterserver.core.MasterServer;
-import com.tank2d.masterserver.core.room.Room;
-import com.tank2d.masterserver.core.room.RoomManager;
+import com.tank2d.tankserver.core.MasterServer;
+import com.tank2d.tankserver.core.room.Room;
+import com.tank2d.tankserver.core.room.RoomManager;
 import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;

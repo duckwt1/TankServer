@@ -1,4 +1,4 @@
-package com.tank2d.masterserver.core;
+package com.tank2d.tankserver.core;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -12,12 +12,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
-import com.tank2d.masterserver.core.room.Room;
-import com.tank2d.masterserver.core.room.RoomManager;
-import com.tank2d.masterserver.core.shop.BuyResult;
-import com.tank2d.masterserver.ui.MasterServerDashboard.ServerEvent;
-import com.tank2d.shared.Packet;
-import com.tank2d.shared.PacketType;
+import com.tank2d.tankserver.core.room.Room;
+import com.tank2d.tankserver.core.room.RoomManager;
+import com.tank2d.tankserver.core.shop.BuyResult;
+import com.tank2d.tankserver.ui.MasterServerDashboard.ServerEvent;
+import com.tank2d.tankserver.utils.Packet;
+import com.tank2d.tankserver.utils.PacketType;
 
 public class ClientHandler implements Runnable {
     private final Socket socket;

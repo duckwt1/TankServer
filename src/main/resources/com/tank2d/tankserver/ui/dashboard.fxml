@@ -6,7 +6,7 @@
 <?import javafx.scene.text.Font?>
 
 <BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
-            fx:controller="com.tank2d.masterserver.ui.MasterServerDashboard"
+            fx:controller="com.tank2d.tankserver.ui.MasterServerDashboard"
             prefHeight="700.0" prefWidth="1000.0"
             style="-fx-background-color: #8ab48f;">
 

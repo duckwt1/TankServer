@@ -1,4 +1,4 @@
-package com.tank2d.shared;
+package com.tank2d.tankserver.utils;
 
 public class PacketType {
     public static final int LOGIN = 1;

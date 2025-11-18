@@ -1,4 +1,6 @@
-package com.tank2d.masterserver.db;
+package com.tank2d.tankserver.db;
+
+import com.tank2d.tankserver.core.shop.ShopItem;
 
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -8,8 +10,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-
-import com.tank2d.client.entity.ShopItem;
 
 
 public class ShopRepository {

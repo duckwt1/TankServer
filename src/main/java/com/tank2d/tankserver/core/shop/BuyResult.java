@@ -1,4 +1,4 @@
-package com.tank2d.masterserver.core.shop;
+package com.tank2d.tankserver.core.shop;
 
 public class BuyResult {
     public String status;

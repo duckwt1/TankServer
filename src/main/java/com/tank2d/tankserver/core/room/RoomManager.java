@@ -1,7 +1,7 @@
-package com.tank2d.masterserver.core.room;
+package com.tank2d.tankserver.core.room;
 
-import com.tank2d.masterserver.core.ClientHandler;
-import com.tank2d.masterserver.ui.MasterServerDashboard;
+import com.tank2d.tankserver.core.ClientHandler;
+import com.tank2d.tankserver.ui.MasterServerDashboard;
 
 import java.util.*;
 

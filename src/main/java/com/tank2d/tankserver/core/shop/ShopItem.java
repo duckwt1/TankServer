@@ -1,4 +1,4 @@
-package com.tank2d.client.entity;
+package com.tank2d.tankserver.core.shop;
 
 import java.util.HashMap;
 import java.util.Map;

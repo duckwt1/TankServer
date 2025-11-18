@@ -1,6 +1,7 @@
-package com.tank2d.shared;
+package com.tank2d.tankserver.utils;
 
 import org.json.JSONObject;
+
 import java.util.HashMap;
 
 public class Packet {

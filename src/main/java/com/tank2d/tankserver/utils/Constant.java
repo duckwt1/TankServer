@@ -1,4 +1,4 @@
-package com.tank2d.shared;
+package com.tank2d.tankserver.utils;
 
 public class Constant {
     public static final int TILESIZE = 32;

@@ -1,15 +1,15 @@
-package com.tank2d.masterserver.core;
+package com.tank2d.tankserver.core;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 
-import com.tank2d.client.entity.ShopItem;
-import com.tank2d.masterserver.core.shop.BuyResult;
-import com.tank2d.masterserver.db.AccountRepository;
-import com.tank2d.masterserver.db.Connector;
-import com.tank2d.masterserver.db.ShopRepository;
-import com.tank2d.masterserver.db.ShopRepository.ShopItemInfo;
+import com.tank2d.tankserver.core.shop.BuyResult;
+import com.tank2d.tankserver.core.shop.ShopItem;
+import com.tank2d.tankserver.db.AccountRepository;
+import com.tank2d.tankserver.db.Connector;
+import com.tank2d.tankserver.db.ShopRepository;
+import com.tank2d.tankserver.db.ShopRepository.ShopItemInfo;
 
 /**
  * Business Logic Layer for Shop

@@ -1,6 +1,6 @@
-package com.tank2d.masterserver.core;
+package com.tank2d.tankserver.core;
 
-import com.tank2d.masterserver.ui.MasterServerDashboard.ServerEvent;
+import com.tank2d.tankserver.ui.MasterServerDashboard.ServerEvent;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
