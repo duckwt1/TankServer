@@ -220,23 +220,27 @@ public class ClientHandler implements Runnable {
 
         System.out.println("Starting game in room: " + currentRoom.getName());
 
-        int udpPort = 5000 + currentRoom.getId(); // unique per room
-        String hostIp = socket.getInetAddress().getHostAddress();
+        // Use dynamic port per room to avoid conflicts
+        int udpPort = 5000 + currentRoom.getId();
+        
+        // Use localhost for LAN, Playit for internet
+        // Client can try localhost first, fallback to Playit
+        String hostIp = "localhost";
 
-        // Lấy thông tin map (ví dụ hardcode hoặc lưu trong room)
-        //int mapId = currentRoom.getMapId(); // nếu chưa có, bạn có thể cho 1 giá trị mặc định như 1
+        // Map configuration
         int mapId = 2;
-        // Danh sách người chơi
+        
+        // Player list
         List<Map<String, Object>> playersData = new ArrayList<>();
         for (ClientHandler c : currentRoom.getPlayers()) {
             Map<String, Object> playerInfo = new HashMap<>();
             playerInfo.put("name", c.getUsername());
-            playerInfo.put("tankId", 1); // bạn có thể cho mỗi người chọn tankId riêng
+            playerInfo.put("tankId", 1);
             playerInfo.put("gunId", 1);
             playersData.add(playerInfo);
         }
 
-        // Gửi cho từng client
+        // Send to all clients
         for (ClientHandler client : currentRoom.getPlayers()) {
             Packet start = new Packet(PacketType.START_GAME);
             start.data.put("msg", "Game is starting!");
