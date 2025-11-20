@@ -55,7 +55,7 @@ public class MasterServerDashboard implements Initializable {
     // -------------------- SETUP --------------------
 
     private void setupUI() {
-        txtPort.setText("5000");
+        txtPort.setText("11640");
         lblServerStatus.setText("Stopped");
         lblServerStatus.setStyle("-fx-text-fill: red; -fx-font-weight: bold;");
         lblPort.setText("N/A");

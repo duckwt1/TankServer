@@ -125,4 +125,16 @@ public class RoomManager {
             }
         }
     }
+    
+    /**
+     * Find which room a player is in (by username)
+     */
+    public static synchronized Room findRoomByPlayer(String username) {
+        for (Room room : rooms.values()) {
+            if (room.getPlayerNames().contains(username)) {
+                return room;
+            }
+        }
+        return null;
+    }
 }

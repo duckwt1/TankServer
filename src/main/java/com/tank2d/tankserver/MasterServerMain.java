@@ -29,7 +29,7 @@ public class MasterServerMain extends Application {
         if (args.length > 0 && args[0].equals("--console")) {
             // Run in console mode
             System.out.println("Starting Master Server in console mode...");
-            new MasterServer().start(5000);
+            new MasterServer().start(11640);
         } else {
             // Run with GUI
             launch(args);

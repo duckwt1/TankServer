@@ -13,6 +13,7 @@ public class MasterServer {
     private Consumer<ServerEvent> eventCallback;
     private ServerSocket serverSocket;
     private volatile boolean running = false;
+    private RendezvousServer rendezvousServer;
 
     public MasterServer() {
         // Default constructor for console mode
@@ -26,7 +27,12 @@ public class MasterServer {
         try {
             serverSocket = new ServerSocket(port);
             running = true;
-            System.out.println("Master Server started on port " + port);
+            System.out.println("Master Server started on TCP port " + port);
+            
+            // Start Rendezvous server for UDP hole punching
+            rendezvousServer = new RendezvousServer(port + 1000);
+            rendezvousServer.start();
+            System.out.println("Rendezvous Server started on UDP port " + (port + 1000));
 
             while (running) {
                 try {
@@ -52,6 +58,12 @@ public class MasterServer {
 
     public void stop() {
         running = false;
+        
+        // Stop Rendezvous server
+        if (rendezvousServer != null) {
+            rendezvousServer.stopServer();
+        }
+        
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {
                 serverSocket.close();

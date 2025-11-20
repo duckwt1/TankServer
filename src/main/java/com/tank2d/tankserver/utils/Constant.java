@@ -14,4 +14,8 @@ public class Constant {
     public static final int PLAYER_WIDTH = 32;
     public static final int PLAYER_TILE_SIZE = 64;
     
+    // Server Configuration (Playit.gg)
+    public static final String SERVER_HOST = "restaurants-expenditures.gl.at.ply.gg";
+    public static final int SERVER_PORT = 11640;
+    public static final int RENDEZVOUS_PORT = 12640;
 }
