@@ -14,6 +14,7 @@ public class MasterServer {
     private ServerSocket serverSocket;
     private volatile boolean running = false;
     private RendezvousServer rendezvousServer;
+    private GameRelayServer gameRelayServer;
 
     public MasterServer() {
         // Default constructor for console mode
@@ -28,6 +29,11 @@ public class MasterServer {
             serverSocket = new ServerSocket(port);
             running = true;
             System.out.println("Master Server started on TCP port " + port);
+            
+            // Start Game Relay Server for UDP game state forwarding
+            gameRelayServer = new GameRelayServer(port);
+            gameRelayServer.start();
+            System.out.println("Game Relay Server started on UDP port " + port);
             
             // Start Rendezvous server for UDP hole punching
             rendezvousServer = new RendezvousServer(port + 1000);
@@ -58,6 +64,11 @@ public class MasterServer {
 
     public void stop() {
         running = false;
+        
+        // Stop Game Relay server
+        if (gameRelayServer != null) {
+            gameRelayServer.stopServer();
+        }
         
         // Stop Rendezvous server
         if (rendezvousServer != null) {

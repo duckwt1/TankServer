@@ -220,12 +220,10 @@ public class ClientHandler implements Runnable {
 
         System.out.println("Starting game in room: " + currentRoom.getName());
 
-        // Use dynamic port per room to avoid conflicts
-        int udpPort = 5000 + currentRoom.getId();
-        
-        // Use localhost for LAN, Playit for internet
-        // Client can try localhost first, fallback to Playit
-        String hostIp = "localhost";
+        // Use relay server instead of P2P
+        String relayHost = com.tank2d.tankserver.utils.Constant.SERVER_HOST;
+        int relayPort = com.tank2d.tankserver.utils.Constant.SERVER_PORT;
+        int roomId = currentRoom.getId();
 
         // Map configuration
         int mapId = 2;
@@ -244,8 +242,9 @@ public class ClientHandler implements Runnable {
         for (ClientHandler client : currentRoom.getPlayers()) {
             Packet start = new Packet(PacketType.START_GAME);
             start.data.put("msg", "Game is starting!");
-            start.data.put("host_ip", hostIp);
-            start.data.put("host_udp_port", udpPort);
+            start.data.put("relay_host", relayHost);
+            start.data.put("relay_port", relayPort);
+            start.data.put("room_id", roomId);
             start.data.put("isHost", currentRoom.getHost().getUsername());
             start.data.put("players", playersData);
             start.data.put("mapId", mapId);
