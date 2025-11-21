@@ -1,194 +1,173 @@
 package com.tank2d.tankserver.core;
 
-import java.net.DatagramPacket;
-import java.net.DatagramSocket;
-import java.net.InetSocketAddress;
-import java.util.*;
-import java.util.concurrent.ConcurrentHashMap;
+import com.tank2d.tankserver.utils.Constant;
 
-/**
- * UDP Relay Server - forwards game state packets between all players in a room
- */
+import java.net.*;
+import java.util.*;
+import java.util.concurrent.*;
+
 public class GameRelayServer extends Thread {
+
     private final int port;
-    private boolean running = true;
-    
-    // roomId -> (username -> client address)
+    private volatile boolean running = true;
+
+    // roomId -> (username -> address)
     private final Map<Integer, Map<String, InetSocketAddress>> roomClients = new ConcurrentHashMap<>();
-    
-    // roomId -> (username -> latest player state)
+
+    // roomId -> (username -> state)
     private final Map<Integer, Map<String, String>> roomStates = new ConcurrentHashMap<>();
 
     public GameRelayServer(int port) {
-        this.port = port;
+        this.port = Constant.GAME_RELAY_PORT;
     }
 
     @Override
     public void run() {
-        DatagramSocket socket = null;
-        try {
-            socket = new DatagramSocket(port);
-            socket.setSoTimeout(100);
-            byte[] buffer = new byte[4096];
-            
-            System.out.println("========================================");
-            System.out.println("[GameRelay] UDP Server STARTED");
-            System.out.println("[GameRelay] Port: " + port);
-            System.out.println("[GameRelay] Local address: " + socket.getLocalSocketAddress());
-            System.out.println("[GameRelay] Waiting for packets...");
-            System.out.println("========================================");
+        try (DatagramSocket socket = new DatagramSocket(port)) {
+            socket.setSoTimeout(1);
 
-            int packetCount = 0;
-            while (running) {
+            System.out.println("[GameRelay] Server started on UDP port " + port);
+
+            // Thread 1: RECEIVE LOOP
+            Thread receiver = new Thread(() -> receiveLoop(socket), "ReceiverThread");
+            receiver.start();
+
+            // Thread 2: BROADCAST LOOP (fixed 60 FPS)
+            Thread broadcaster = new Thread(() -> broadcastLoop(socket), "BroadcastThread");
+            broadcaster.start();
+
+            receiver.join();
+            broadcaster.join();
+
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        System.out.println("[GameRelay] Server stopped.");
+    }
+
+    // ============================================================
+    // RECEIVE LOOP → NO DELAY
+    // ============================================================
+    private void receiveLoop(DatagramSocket socket) {
+        byte[] buffer = new byte[4096];
+
+        while (running) {
+            try {
+                DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
+                socket.receive(packet);
+
+                String msg = new String(packet.getData(), 0, packet.getLength()).trim();
+                InetSocketAddress addr = new InetSocketAddress(packet.getAddress(), packet.getPort());
+
+                handlePacket(msg, addr);
+
+            } catch (SocketTimeoutException ignored) {
+                // no packet this tick
+            } catch (Exception e) {
+                System.err.println("[GameRelay] Receive error: " + e.getMessage());
+            }
+        }
+    }
+
+    // ============================================================
+    // BROADCAST LOOP 60 FPS (16ms)
+    // ============================================================
+    private void broadcastLoop(DatagramSocket socket) {
+        long interval = 16; // 60 FPS
+        long last = System.currentTimeMillis();
+
+        while (running) {
+            long now = System.currentTimeMillis();
+
+            if (now - last >= interval) {
+                broadcastAllRooms(socket);
+                last = now;
+            }
+
+            try { Thread.sleep(1); } catch (Exception ignored) {}
+        }
+    }
+
+    private void broadcastAllRooms(DatagramSocket socket) {
+        for (Integer roomId : roomStates.keySet()) {
+            Map<String, String> states = roomStates.get(roomId);
+            Map<String, InetSocketAddress> clients = roomClients.get(roomId);
+
+            if (states == null || clients == null) continue;
+
+            // Build STATE packet
+            StringBuilder msg = new StringBuilder("STATE ");
+            for (String state : states.values()) {
+                msg.append(state).append("; ");
+            }
+
+            byte[] data = msg.toString().getBytes();
+
+            // broadcast to everyone
+            for (InetSocketAddress addr : clients.values()) {
                 try {
-                    DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
-                    socket.receive(packet);
-                    packetCount++;
-                    
-                    String msg = new String(packet.getData(), 0, packet.getLength()).trim();
-                    InetSocketAddress clientAddr = new InetSocketAddress(
-                        packet.getAddress(), 
-                        packet.getPort()
-                    );
-                    
-                    if (packetCount <= 10 || packetCount % 100 == 0) {
-                        System.out.println("[GameRelay] Packet #" + packetCount + " from " + clientAddr + ": " + 
-                            msg.substring(0, Math.min(30, msg.length())));
-                    }
-
-                    handlePacket(msg, clientAddr, socket);
-                    
-                } catch (java.net.SocketTimeoutException ignored) {
-                    // Normal timeout, continue
+                    DatagramPacket p = new DatagramPacket(data, data.length, addr);
+                    socket.send(p);
                 } catch (Exception e) {
-                    System.err.println("[GameRelay] Error: " + e.getMessage());
-                    e.printStackTrace();
+                    System.err.println("[GameRelay] Broadcast error: " + e.getMessage());
                 }
             }
-            
-        } catch (Exception e) {
-            System.err.println("[GameRelay] Fatal error: " + e.getMessage());
-            e.printStackTrace();
-        } finally {
-            if (socket != null && !socket.isClosed()) {
-                socket.close();
-            }
         }
-        
-        System.out.println("[GameRelay] Stopped");
     }
 
-    private void handlePacket(String msg, InetSocketAddress clientAddr, DatagramSocket socket) {
+    // ============================================================
+    // PACKET HANDLING
+    // ============================================================
+    private void handlePacket(String msg, InetSocketAddress addr) {
         String[] parts = msg.split(" ");
-        
         if (parts.length < 2) return;
-        
-        String command = parts[0];
-        
-        switch (command) {
-            case "JOIN" -> handleJoin(parts, clientAddr, socket);
-            case "UPDATE" -> handleUpdate(parts, clientAddr, socket);
-            case "LEAVE" -> handleLeave(parts, clientAddr);
+
+        String cmd = parts[0];
+
+        switch (cmd) {
+            case "JOIN" -> onJoin(parts, addr);
+            case "UPDATE" -> onUpdate(parts, addr);
+            case "LEAVE" -> onLeave(parts);
         }
     }
 
-    /**
-     * JOIN roomId username
-     */
-    private void handleJoin(String[] parts, InetSocketAddress clientAddr, DatagramSocket socket) {
-        if (parts.length != 3) return;
-        
+    private void onJoin(String[] parts, InetSocketAddress addr) {
         int roomId = Integer.parseInt(parts[1]);
         String username = parts[2];
-        
-        roomClients.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>())
-                   .put(username, clientAddr);
+
+        roomClients.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>()).put(username, addr);
         roomStates.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>());
-        
-        System.out.println("[GameRelay] JOIN: " + username + " -> Room " + roomId + 
-                          " (" + roomClients.get(roomId).size() + " players)");
-        
-        // Send ACK
+
+        // ACK
         try {
             String ack = "JOINED " + roomId;
-            byte[] data = ack.getBytes();
-            socket.send(new DatagramPacket(data, data.length, clientAddr));
-        } catch (Exception e) {
-            System.err.println("[GameRelay] Failed to send JOIN ACK: " + e.getMessage());
-        }
+            DatagramPacket p = new DatagramPacket(ack.getBytes(), ack.length(), addr);
+            new DatagramSocket().send(p);
+        } catch (Exception ignored) {}
     }
 
-    /**
-     * UPDATE roomId username x y bodyAngle gunAngle up down left right backward
-     */
-    private void handleUpdate(String[] parts, InetSocketAddress clientAddr, DatagramSocket socket) {
-        if (parts.length != 12) {
-            System.err.println("[GameRelay] Invalid UPDATE packet (expected 12 parts, got " + parts.length + ")");
-            return;
-        }
-        
+    private void onUpdate(String[] parts, InetSocketAddress addr) {
         int roomId = Integer.parseInt(parts[1]);
         String username = parts[2];
-        
-        // Update client address (in case port changed)
-        Map<String, InetSocketAddress> clients = roomClients.get(roomId);
-        if (clients == null) {
-            System.err.println("[GameRelay] Room " + roomId + " not found for UPDATE from " + username);
-            return;
-        }
-        
-        clients.put(username, clientAddr);
-        
-        // Store player state: "username x y bodyAngle gunAngle up down left right backward"
-        String playerState = String.join(" ", Arrays.copyOfRange(parts, 2, 12));
-        roomStates.get(roomId).put(username, playerState);
-        
-        // Build STATE message with all players in room
-        StringBuilder stateMsg = new StringBuilder("STATE ");
-        for (String state : roomStates.get(roomId).values()) {
-            stateMsg.append(state).append("; ");
-        }
-        
-        // Broadcast to all players in room
-        byte[] data = stateMsg.toString().getBytes();
-        int sent = 0;
-        for (Map.Entry<String, InetSocketAddress> entry : clients.entrySet()) {
-            try {
-                socket.send(new DatagramPacket(data, data.length, entry.getValue()));
-                sent++;
-            } catch (Exception e) {
-                System.err.println("[GameRelay] Failed to send to " + entry.getKey() + ": " + e.getMessage());
-            }
-        }
-        
-        //System.out.println("[GameRelay] Room " + roomId + ": broadcasted state to " + sent + " clients");
+
+        // store address
+        roomClients.get(roomId).put(username, addr);
+
+        // store state
+        String state = String.join(" ", Arrays.copyOfRange(parts, 2, 12));
+        roomStates.get(roomId).put(username, state);
     }
 
-    /**
-     * LEAVE roomId username
-     */
-    private void handleLeave(String[] parts, InetSocketAddress clientAddr) {
-        if (parts.length != 3) return;
-        
+    private void onLeave(String[] parts) {
         int roomId = Integer.parseInt(parts[1]);
         String username = parts[2];
-        
+
         Map<String, InetSocketAddress> clients = roomClients.get(roomId);
-        if (clients != null) {
-            clients.remove(username);
-            System.out.println("[GameRelay] LEAVE: " + username + " from Room " + roomId);
-            
-            if (clients.isEmpty()) {
-                roomClients.remove(roomId);
-                roomStates.remove(roomId);
-                System.out.println("[GameRelay] Room " + roomId + " is now empty, cleaned up");
-            }
-        }
-        
         Map<String, String> states = roomStates.get(roomId);
-        if (states != null) {
-            states.remove(username);
-        }
+
+        if (clients != null) clients.remove(username);
+        if (states != null) states.remove(username);
     }
 
     public void stopServer() {
