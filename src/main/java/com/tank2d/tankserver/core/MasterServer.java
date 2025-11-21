@@ -1,6 +1,7 @@
 package com.tank2d.tankserver.core;
 
 import com.tank2d.tankserver.ui.MasterServerDashboard.ServerEvent;
+import com.tank2d.tankserver.utils.Constant;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -13,7 +14,6 @@ public class MasterServer {
     private Consumer<ServerEvent> eventCallback;
     private ServerSocket serverSocket;
     private volatile boolean running = false;
-    private RendezvousServer rendezvousServer;
     private GameRelayServer gameRelayServer;
 
     public MasterServer() {
@@ -31,14 +31,9 @@ public class MasterServer {
             System.out.println("Master Server started on TCP port " + port);
             
             // Start Game Relay Server for UDP game state forwarding
-            gameRelayServer = new GameRelayServer(port);
+            gameRelayServer = new GameRelayServer(Constant.GAME_RELAY_PORT);
             gameRelayServer.start();
-            System.out.println("Game Relay Server started on UDP port " + port);
-            
-            // Start Rendezvous server for UDP hole punching
-            rendezvousServer = new RendezvousServer(port + 1000);
-            rendezvousServer.start();
-            System.out.println("Rendezvous Server started on UDP port " + (port + 1000));
+            System.out.println("Game Relay Server started on UDP port " + Constant.GAME_RELAY_PORT);
 
             while (running) {
                 try {
@@ -68,11 +63,6 @@ public class MasterServer {
         // Stop Game Relay server
         if (gameRelayServer != null) {
             gameRelayServer.stopServer();
-        }
-        
-        // Stop Rendezvous server
-        if (rendezvousServer != null) {
-            rendezvousServer.stopServer();
         }
         
         try {

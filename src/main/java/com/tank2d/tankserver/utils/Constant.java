@@ -17,5 +17,9 @@ public class Constant {
     // Server Configuration (Playit.gg)
     public static final String SERVER_HOST = "restaurants-expenditures.gl.at.ply.gg";
     public static final int SERVER_PORT = 11640;
-    public static final int RENDEZVOUS_PORT = 12640;
+    
+    // Game Relay Server (UDP tunnel)
+    // For testing: use localhost or LAN IP
+    public static final String GAME_RELAY_HOST = "localhost"; // Change to public tunnel for internet play
+    public static final int GAME_RELAY_PORT = 4972;
 }

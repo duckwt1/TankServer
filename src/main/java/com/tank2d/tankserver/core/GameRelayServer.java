@@ -25,22 +25,36 @@ public class GameRelayServer extends Thread {
 
     @Override
     public void run() {
-        try (DatagramSocket socket = new DatagramSocket(port)) {
+        DatagramSocket socket = null;
+        try {
+            socket = new DatagramSocket(port);
             socket.setSoTimeout(100);
             byte[] buffer = new byte[4096];
             
-            System.out.println("[GameRelay] Started on UDP port " + port);
+            System.out.println("========================================");
+            System.out.println("[GameRelay] UDP Server STARTED");
+            System.out.println("[GameRelay] Port: " + port);
+            System.out.println("[GameRelay] Local address: " + socket.getLocalSocketAddress());
+            System.out.println("[GameRelay] Waiting for packets...");
+            System.out.println("========================================");
 
+            int packetCount = 0;
             while (running) {
                 try {
                     DatagramPacket packet = new DatagramPacket(buffer, buffer.length);
                     socket.receive(packet);
+                    packetCount++;
                     
                     String msg = new String(packet.getData(), 0, packet.getLength()).trim();
                     InetSocketAddress clientAddr = new InetSocketAddress(
                         packet.getAddress(), 
                         packet.getPort()
                     );
+                    
+                    if (packetCount <= 10 || packetCount % 100 == 0) {
+                        System.out.println("[GameRelay] Packet #" + packetCount + " from " + clientAddr + ": " + 
+                            msg.substring(0, Math.min(30, msg.length())));
+                    }
 
                     handlePacket(msg, clientAddr, socket);
                     
@@ -48,12 +62,17 @@ public class GameRelayServer extends Thread {
                     // Normal timeout, continue
                 } catch (Exception e) {
                     System.err.println("[GameRelay] Error: " + e.getMessage());
+                    e.printStackTrace();
                 }
             }
             
         } catch (Exception e) {
             System.err.println("[GameRelay] Fatal error: " + e.getMessage());
             e.printStackTrace();
+        } finally {
+            if (socket != null && !socket.isClosed()) {
+                socket.close();
+            }
         }
         
         System.out.println("[GameRelay] Stopped");

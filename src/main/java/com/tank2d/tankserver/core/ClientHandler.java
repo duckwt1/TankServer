@@ -221,9 +221,11 @@ public class ClientHandler implements Runnable {
         System.out.println("Starting game in room: " + currentRoom.getName());
 
         // Use relay server instead of P2P
-        String relayHost = com.tank2d.tankserver.utils.Constant.SERVER_HOST;
-        int relayPort = com.tank2d.tankserver.utils.Constant.SERVER_PORT;
+        String relayHost = com.tank2d.tankserver.utils.Constant.GAME_RELAY_HOST;
+        int relayPort = com.tank2d.tankserver.utils.Constant.GAME_RELAY_PORT;
         int roomId = currentRoom.getId();
+        
+        System.out.println("[START_GAME] Sending relay info: " + relayHost + ":" + relayPort + " (Room " + roomId + ")");
 
         // Map configuration
         int mapId = 2;
