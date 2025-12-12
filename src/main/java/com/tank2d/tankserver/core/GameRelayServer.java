@@ -155,7 +155,8 @@ public class GameRelayServer extends Thread {
         roomClients.get(roomId).put(username, addr);
 
         // store state
-        String state = String.join(" ", Arrays.copyOfRange(parts, 2, 12));
+// include ALL fields after username
+        String state = String.join(" ", Arrays.copyOfRange(parts, 2, parts.length));
         roomStates.get(roomId).put(username, state);
     }
 
