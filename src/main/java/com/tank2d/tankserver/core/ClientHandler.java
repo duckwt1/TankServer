@@ -15,6 +15,7 @@ import java.util.function.Consumer;
 import com.tank2d.tankserver.core.room.Room;
 import com.tank2d.tankserver.core.room.RoomManager;
 import com.tank2d.tankserver.core.shop.BuyResult;
+import com.tank2d.tankserver.db.InventoryRepository;
 import com.tank2d.tankserver.ui.MasterServerDashboard.ServerEvent;
 import com.tank2d.tankserver.utils.Packet;
 import com.tank2d.tankserver.utils.PacketType;
@@ -86,9 +87,14 @@ public class ClientHandler implements Runnable {
             case PacketType.LEAVE_ROOM -> handleLeaveRoom(p);
             case PacketType.PLAYER_READY -> handlePlayerReady(p);
             case PacketType.START_GAME -> handleStartGame(p);
+            case PacketType.SELECT_MAP -> handleSelectMap(p);
             case PacketType.ROOM_LIST -> handleRoomList(p);
             case PacketType.SHOP_LIST -> handleShopList(p);
             case PacketType.BUY_ITEM -> handleBuyItem(p);
+            case PacketType.TANK_SHOP_LIST -> handleTankShopList(p);
+            case PacketType.BUY_TANK -> handleBuyTank(p);
+            case PacketType.EQUIP_TANK -> handleEquipTank(p);
+            case PacketType.INVENTORY_REQUEST -> handleInventoryRequest(p);
         }
     }
 
@@ -189,7 +195,9 @@ public class ClientHandler implements Runnable {
         Packet resp = new Packet(PacketType.ROOM_JOINED);
         resp.data.put("roomId", room.getId());
         resp.data.put("roomName", room.getName());
+        resp.data.put("maxPlayers", room.getMaxPlayers());
         resp.data.put("players", room.getPlayerNames());
+        resp.data.put("selectedMap", room.getSelectedMap()); // Send current selected map
         send(resp);
 
         broadcastToRoom(room, PacketType.ROOM_UPDATE, username + " joined the room");
@@ -209,6 +217,40 @@ public class ClientHandler implements Runnable {
         boolean ready = (boolean) p.data.get("ready");
         broadcastToRoom(currentRoom, PacketType.ROOM_UPDATE, username + (ready ? " is ready!" : " is not ready"));
     }
+    
+    private void handleSelectMap(Packet p) {
+        if (currentRoom == null) {
+            sendError("You are not in a room!");
+            return;
+        }
+        
+        if (!currentRoom.getHost().equals(this)) {
+            sendError("Only host can select map!");
+            return;
+        }
+        
+        String selectedMap = (String) p.data.get("map");
+        if (selectedMap == null || selectedMap.isEmpty()) {
+            selectedMap = "map1";
+        }
+        
+        // Validate map name
+        if (!selectedMap.matches("map[1-3]")) {
+            sendError("Invalid map selection!");
+            return;
+        }
+        
+        currentRoom.setSelectedMap(selectedMap);
+        System.out.println("Host " + username + " selected map: " + selectedMap);
+        
+        // Broadcast to all players in room
+        Packet resp = new Packet(PacketType.MAP_SELECTED);
+        resp.data.put("map", selectedMap);
+        
+        for (ClientHandler client : currentRoom.getPlayers()) {
+            client.send(resp);
+        }
+    }
 
     private void handleStartGame(Packet p) {
         if (currentRoom == null) return;
@@ -227,8 +269,14 @@ public class ClientHandler implements Runnable {
         
         System.out.println("[START_GAME] Sending relay info: " + relayHost + ":" + relayPort + " (Room " + roomId + ")");
 
-        // Map configuration
-        int mapId = 2;
+        // Map configuration - use selected map from room
+        String selectedMap = currentRoom.getSelectedMap();
+        int mapId = switch (selectedMap) {
+            case "map1" -> 1;
+            case "map2" -> 2;
+            case "map3" -> 3;
+            default -> 1;
+        };
         
         // Player list
         List<Map<String, Object>> playersData = new ArrayList<>();
@@ -331,11 +379,42 @@ public class ClientHandler implements Runnable {
         }
         send(resp);
     }
+    
+    private void handleInventoryRequest(Packet p) {
+        if (username == null) {
+            sendError("You must be logged in!");
+            return;
+        }
+        
+        int userId = AccountManager.getUserIdByUsername(username);
+        if (userId <= 0) {
+            sendError("User not found!");
+            return;
+        }
+        
+        // Get user's tanks from tank table
+        var userTanks = com.tank2d.tankserver.db.TankRepository.getUserTanks(userId);
+        
+        // Get user's items from item table
+        var inventoryItems = InventoryRepository.getUserInventory(userId);
+        
+        // Get user's gold
+        int gold = AccountManager.getUserGold(userId);
+        
+        Packet resp = new Packet(PacketType.INVENTORY_DATA);
+        resp.data.put("tanks", userTanks);
+        resp.data.put("items", inventoryItems);
+        resp.data.put("gold", gold);
+        
+        System.out.println("Sent inventory: " + userTanks.size() + " tanks, " + inventoryItems.size() + " items to " + username);
+        send(resp);
+    }
 
     private void broadcastToRoom(Room room, int type, String msg) {
         Packet p = new Packet(type);
         p.data.put("msg", msg);
         p.data.put("players", room.getPlayerNames());
+        p.data.put("maxPlayers", room.getMaxPlayers());
         for (ClientHandler c : room.getPlayers()) c.send(p);
     }
 
@@ -355,5 +434,65 @@ public class ClientHandler implements Runnable {
 
     public String getUsername() {
         return this.username;
+    }
+    
+    private void handleTankShopList(Packet p) {
+        var tanks = TankShopManager.getAllTanks();
+        
+        // Convert to serializable format
+        List<Map<String, Object>> tankList = new ArrayList<>();
+        for (var tank : tanks) {
+            Map<String, Object> t = new HashMap<>();
+            t.put("id", tank.id);
+            t.put("name", tank.name);
+            t.put("description", tank.description);
+            t.put("price", tank.price);
+            t.put("discount", tank.discount);
+            t.put("stock", tank.stock);
+            t.put("attributes", tank.attributes);
+            tankList.add(t);
+        }
+        
+        int gold = AccountManager.getUserGold(AccountManager.getUserIdByUsername(username));
+        
+        Packet resp = new Packet(PacketType.TANK_SHOP_LIST_DATA);
+        resp.data.put("tanks", tankList);
+        resp.data.put("gold", gold);
+        send(resp);
+    }
+    
+    private void handleBuyTank(Packet p) {
+        int tankId = (int) p.data.get("tankId");
+        int userId = AccountManager.getUserIdByUsername(username);
+        
+        BuyResult result = TankShopManager.buyTank(userId, tankId);
+        
+        if (result.status.equals("SUCCESS")) {
+            Packet resp = new Packet(PacketType.BUY_SUCCESS);
+            resp.data.put("msg", "Tank purchased successfully!");
+            resp.data.put("remainingGold", result.remainingGold);
+            send(resp);
+        } else {
+            Packet resp = new Packet(PacketType.BUY_FAIL);
+            resp.data.put("msg", result.status);
+            send(resp);
+        }
+    }
+    
+    private void handleEquipTank(Packet p) {
+        int tankId = (int) p.data.get("tankId");
+        int userId = AccountManager.getUserIdByUsername(username);
+        
+        boolean success = TankShopManager.equipTank(userId, tankId);
+        
+        if (success) {
+            Packet resp = new Packet(PacketType.EQUIP_TANK_SUCCESS);
+            resp.data.put("tankId", tankId);
+            send(resp);
+        } else {
+            Packet resp = new Packet(PacketType.EQUIP_TANK_FAIL);
+            resp.data.put("msg", "Failed to equip tank");
+            send(resp);
+        }
     }
 }

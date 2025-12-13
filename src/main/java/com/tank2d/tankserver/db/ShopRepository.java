@@ -155,15 +155,18 @@ public class ShopRepository {
      */
     public void recordTransaction(Connection conn, int userId, int itemId, int quantity, int totalPrice) throws SQLException {
         String sql = """
-            INSERT INTO transactions(user_id, item_id, quantity, total_price)
-            VALUES (?, ?, ?, ?)
+            INSERT INTO transactions(user_id, item_id, quantity, unit_price, total_price)
+            VALUES (?, ?, ?, ?, ?)
         """;
+        
+        int unitPrice = totalPrice / quantity; // Tính đơn giá
         
         try (PreparedStatement ps = conn.prepareStatement(sql)) {
             ps.setInt(1, userId);
             ps.setInt(2, itemId);
             ps.setInt(3, quantity);
-            ps.setInt(4, totalPrice);
+            ps.setInt(4, unitPrice);
+            ps.setInt(5, totalPrice);
             ps.executeUpdate();
         }
     }
