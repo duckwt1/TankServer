@@ -15,12 +15,10 @@ public class Constant {
     public static final int PLAYER_TILE_SIZE = 64;
     
     // Server Configuration (Playit.gg)
-    public static final String SERVER_HOST = "per-mg.gl.at.ply.gg";
+    public static final String SERVER_HOST = "restaurants-expenditures.gl.at.ply.gg";
     public static final int SERVER_PORT = 11640;
-    //public static final String SERVER_HOST = "restaurants-expenditures.gl.at.ply.gg";
-    //public static final int SERVER_PORT = 11640;
+    
     // Game Relay Server (UDP tunnel)
-    // For testing: use localhost or LAN IP
-    public static final String GAME_RELAY_HOST = "try-crystal.gl.at.ply.gg"; // Change to public tunnel for internet play
-    public static final int GAME_RELAY_PORT = 11001;
+    public static final String GAME_RELAY_HOST = "takes-concerts.gl.at.ply.gg";
+    public static final int GAME_RELAY_PORT = 4972;
 }

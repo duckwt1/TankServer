@@ -11,6 +11,7 @@ public class Room {
     private List<ClientHandler> players = new ArrayList<>();
     private int maxPlayers;
     private String password;
+    private String selectedMap = "map1"; // Default map
 
     public Room(int id, String name, ClientHandler host, int maxPlayers, String password) {
         this.id = id;
@@ -29,6 +30,9 @@ public class Room {
     public int getPlayerCount() { return players.size(); }
     public boolean hasPassword() { return password != null && !password.isEmpty(); }
     public boolean isFull() { return players.size() >= maxPlayers; }
+    
+    public String getSelectedMap() { return selectedMap; }
+    public void setSelectedMap(String selectedMap) { this.selectedMap = selectedMap; }
     
     public boolean checkPassword(String inputPassword) {
         if (!hasPassword()) return true;
