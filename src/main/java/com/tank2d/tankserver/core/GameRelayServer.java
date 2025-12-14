@@ -151,14 +151,18 @@ public class GameRelayServer extends Thread {
         int roomId = Integer.parseInt(parts[1]);
         String username = parts[2];
 
+        // ✅ ENSURE ROOM EXISTS (IMPORTANT)
+        roomClients.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>());
+        roomStates.computeIfAbsent(roomId, k -> new ConcurrentHashMap<>());
+
         // store address
         roomClients.get(roomId).put(username, addr);
 
-        // store state
-// include ALL fields after username
+        // store state (include ALL fields after username)
         String state = String.join(" ", Arrays.copyOfRange(parts, 2, parts.length));
         roomStates.get(roomId).put(username, state);
     }
+
 
     private void onLeave(String[] parts) {
         int roomId = Integer.parseInt(parts[1]);
