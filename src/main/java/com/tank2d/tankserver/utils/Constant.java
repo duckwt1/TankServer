@@ -1,6 +1,8 @@
 package com.tank2d.tankserver.utils;
 
 public class Constant {
+
+    // ===== GAME CONFIG (không liên quan mạng) =====
     public static final int TILESIZE = 32;
     public static final int CHAR_SCALE = 1;
     public static final int SCALE = 3;
@@ -13,12 +15,7 @@ public class Constant {
     public static final int PLAYER_HEIGHT = 48;
     public static final int PLAYER_WIDTH = 32;
     public static final int PLAYER_TILE_SIZE = 64;
-    
-    // Server Configuration (Playit.gg)
-    public static final String SERVER_HOST = "restaurants-expenditures.gl.at.ply.gg";
-    public static final int SERVER_PORT = 11640;
-    
-    // Game Relay Server (UDP tunnel)
-    public static final String GAME_RELAY_HOST = "takes-concerts.gl.at.ply.gg";
-    public static final int GAME_RELAY_PORT = 4972;
+
+    // ===== LAN SERVER CONFIG =====
+    public static final int SERVER_PORT = 11640; // LAN port
 }

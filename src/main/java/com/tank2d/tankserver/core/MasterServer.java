@@ -14,7 +14,6 @@ public class MasterServer {
     private Consumer<ServerEvent> eventCallback;
     private ServerSocket serverSocket;
     private volatile boolean running = false;
-    private GameRelayServer gameRelayServer;
 
     public MasterServer() {
         // Default constructor for console mode
@@ -28,12 +27,12 @@ public class MasterServer {
         try {
             serverSocket = new ServerSocket(port);
             running = true;
-            System.out.println("Master Server started on TCP port " + port);
+//            System.out.println("Master Server started on TCP port " + port);
             
-            // Start Game Relay Server for UDP game state forwarding
-            gameRelayServer = new GameRelayServer(Constant.GAME_RELAY_PORT);
-            gameRelayServer.start();
-            System.out.println("Game Relay Server started on UDP port " + Constant.GAME_RELAY_PORT);
+//            // Start Game Relay Server for UDP game state forwarding
+//            gameRelayServer = new GameRelayServer(Constant.GAME_RELAY_PORT);
+//            gameRelayServer.start();
+//            System.out.println("Game Relay Server started on UDP port " + Constant.GAME_RELAY_PORT);
 
             while (running) {
                 try {
@@ -60,10 +59,7 @@ public class MasterServer {
     public void stop() {
         running = false;
         
-        // Stop Game Relay server
-        if (gameRelayServer != null) {
-            gameRelayServer.stopServer();
-        }
+
         
         try {
             if (serverSocket != null && !serverSocket.isClosed()) {

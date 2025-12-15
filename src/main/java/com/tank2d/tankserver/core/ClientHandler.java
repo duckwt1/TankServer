@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.io.PrintWriter;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -28,11 +29,96 @@ public class ClientHandler implements Runnable {
     private final Consumer<ServerEvent> eventCallback;
     private final String clientIP;
     private Room currentRoom;
+    private InetSocketAddress udpEndpoint;
 
     public ClientHandler(Socket socket, Consumer<ServerEvent> eventCallback) {
         this.socket = socket;
         this.eventCallback = eventCallback;
         this.clientIP = socket.getInetAddress().getHostAddress();
+    }
+    // Thêm field vào class ClientHandler
+
+// Thêm một packet type mới (nếu chưa có) trong PacketType.java:
+// public static final int REPORT_UDP_ENDPOINT = 30; // hoặc giá trị phù hợp
+
+    // Thêm method xử lý báo cáo UDP port từ client
+    private void handleReportUdpEndpoint(Packet p) {
+        if (currentRoom == null) return;
+
+        String ip = clientIP; // IP mà server thấy (có thể là public hoặc LAN)
+        int port = (int) p.data.get("udpPort");
+
+        this.udpEndpoint = new InetSocketAddress(ip, port);
+        System.out.println("[Server] " + username + " reported UDP endpoint: " + ip + ":" + port);
+    }
+
+// Thêm vào switch trong handlePacket():
+
+    // Sửa lại handleStartGame() để gửi danh sách peers
+    private void handleStartGame(Packet p) {
+        if (currentRoom == null) return;
+
+        if (!currentRoom.getHost().equals(this)) {
+            sendError("Only host can start!");
+            return;
+        }
+        for (ClientHandler c : currentRoom.getPlayers()) {
+            if (c.udpEndpoint == null) {
+                sendError("Player " + c.getUsername() + " has not reported UDP yet");
+                return;
+            }
+        }
+
+
+        System.out.println("Starting game in room: " + currentRoom.getName());
+
+        // Lấy map đã chọn
+        String selectedMap = currentRoom.getSelectedMap();
+        int mapId = switch (selectedMap) {
+            case "map1" -> 1;
+            case "map2" -> 2;
+            case "map3" -> 3;
+            default -> 1;
+        };
+
+        // Tạo danh sách players cơ bản
+        List<Map<String, Object>> playersData = new ArrayList<>();
+        // Tạo danh sách peers cho P2P (IP + UDP port)
+        List<Map<String, Object>> peers = new ArrayList<>();
+
+        for (ClientHandler c : currentRoom.getPlayers()) {
+            // Player info cho game logic
+            Map<String, Object> playerInfo = new HashMap<>();
+            playerInfo.put("name", c.getUsername());
+            playerInfo.put("tankId", 1);
+            playerInfo.put("gunId", 1);
+            playersData.add(playerInfo);
+
+            // Peer info cho P2P
+            if (c.udpEndpoint != null) {
+                Map<String, Object> peer = new HashMap<>();
+                peer.put("name", c.getUsername());
+                peer.put("ip", c.udpEndpoint.getAddress().getHostAddress());
+                peer.put("udpPort", c.udpEndpoint.getPort());
+                peers.add(peer);
+                System.out.println("[Server] Added peer: " + c.getUsername() + " @ " + c.udpEndpoint);
+            } else {
+                System.out.println("[Server] WARNING: No UDP endpoint for " + c.getUsername());
+            }
+        }
+
+        // Gửi START_GAME cho tất cả client
+        for (ClientHandler client : currentRoom.getPlayers()) {
+            Packet start = new Packet(PacketType.START_GAME);
+            start.data.put("msg", "Game is starting!");
+            start.data.put("isHost", currentRoom.getHost().getUsername());
+            start.data.put("players", playersData);
+            start.data.put("mapId", mapId);
+            start.data.put("peers", peers); // ← Quan trọng: gửi danh sách peers để P2P
+            client.send(start);
+        }
+
+        System.out.println("Sent START_GAME with " + peers.size() + " peers to all players.");
     }
 
     @Override
@@ -95,6 +181,8 @@ public class ClientHandler implements Runnable {
             case PacketType.BUY_TANK -> handleBuyTank(p);
             case PacketType.EQUIP_TANK -> handleEquipTank(p);
             case PacketType.INVENTORY_REQUEST -> handleInventoryRequest(p);
+            case PacketType.REPORT_UDP_ENDPOINT -> handleReportUdpEndpoint(p);
+
         }
     }
 
@@ -252,64 +340,13 @@ public class ClientHandler implements Runnable {
         }
     }
 
-    private void handleStartGame(Packet p) {
-        if (currentRoom == null) return;
-
-        if (!currentRoom.getHost().equals(this)) {
-            sendError("Only host can start!");
-            return;
-        }
-
-        System.out.println("Starting game in room: " + currentRoom.getName());
-
-        // Use relay server instead of P2P
-        String relayHost = com.tank2d.tankserver.utils.Constant.GAME_RELAY_HOST;
-        int relayPort = com.tank2d.tankserver.utils.Constant.GAME_RELAY_PORT;
-        int roomId = currentRoom.getId();
-        
-        System.out.println("[START_GAME] Sending relay info: " + relayHost + ":" + relayPort + " (Room " + roomId + ")");
-
-        // Map configuration - use selected map from room
-        String selectedMap = currentRoom.getSelectedMap();
-        int mapId = switch (selectedMap) {
-            case "map1" -> 1;
-            case "map2" -> 2;
-            case "map3" -> 3;
-            default -> 1;
-        };
-        
-        // Player list
-        List<Map<String, Object>> playersData = new ArrayList<>();
-        for (ClientHandler c : currentRoom.getPlayers()) {
-            Map<String, Object> playerInfo = new HashMap<>();
-            playerInfo.put("name", c.getUsername());
-            playerInfo.put("tankId", 1);
-            playerInfo.put("gunId", 1);
-            playersData.add(playerInfo);
-        }
-
-        // Send to all clients
-        for (ClientHandler client : currentRoom.getPlayers()) {
-            Packet start = new Packet(PacketType.START_GAME);
-            start.data.put("msg", "Game is starting!");
-            start.data.put("relay_host", relayHost);
-            start.data.put("relay_port", relayPort);
-            start.data.put("room_id", roomId);
-            start.data.put("isHost", currentRoom.getHost().getUsername());
-            start.data.put("players", playersData);
-            start.data.put("mapId", mapId);
-            client.send(start);
-        }
-
-        System.out.println("Sent START_GAME to " + currentRoom.getPlayers().size() + " players.");
-    }
 
     private void handleShopList(Packet p) {
         var items = ShopManager.getAllShopItems();
-        
+
         Packet resp = new Packet(PacketType.SHOP_LIST_DATA);
         List<Map<String, Object>> itemsData = new ArrayList<>();
-        
+
         for (var item : items) {
             Map<String, Object> itemMap = new HashMap<>();
             itemMap.put("id", item.id);
@@ -322,7 +359,7 @@ public class ClientHandler implements Runnable {
             itemMap.put("attributes", item.attributes);
             itemsData.add(itemMap);
         }
-        
+
         resp.data.put("items", itemsData);
         
         // ✅ Gửi thêm gold của user
