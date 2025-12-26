@@ -16,7 +16,6 @@ import java.util.function.Consumer;
 import com.tank2d.tankserver.core.room.Room;
 import com.tank2d.tankserver.core.room.RoomManager;
 import com.tank2d.tankserver.core.shop.BuyResult;
-import com.tank2d.tankserver.db.InventoryRepository;
 import com.tank2d.tankserver.ui.MasterServerDashboard.ServerEvent;
 import com.tank2d.tankserver.utils.Packet;
 import com.tank2d.tankserver.utils.PacketType;
@@ -36,12 +35,7 @@ public class ClientHandler implements Runnable {
         this.eventCallback = eventCallback;
         this.clientIP = socket.getInetAddress().getHostAddress();
     }
-    // Thêm field vào class ClientHandler
 
-// Thêm một packet type mới (nếu chưa có) trong PacketType.java:
-// public static final int REPORT_UDP_ENDPOINT = 30; // hoặc giá trị phù hợp
-
-    // Thêm method xử lý báo cáo UDP port từ client
     private void handleReportUdpEndpoint(Packet p) {
         if (currentRoom == null) return;
 
@@ -430,10 +424,13 @@ public class ClientHandler implements Runnable {
         }
         
         // Get user's tanks from tank table
-        var userTanks = com.tank2d.tankserver.db.TankRepository.getUserTanks(userId);
+        var userTanks = TankShopManager.getUserTanks(userId);
+        
+        // Get equipped tank
+        var equippedTank = TankShopManager.getEquippedTank(userId);
         
         // Get user's items from item table
-        var inventoryItems = InventoryRepository.getUserInventory(userId);
+        var inventoryItems = InventoryManager.getUserInventory(userId);
         
         // Get user's gold
         int gold = AccountManager.getUserGold(userId);
@@ -442,6 +439,7 @@ public class ClientHandler implements Runnable {
         resp.data.put("tanks", userTanks);
         resp.data.put("items", inventoryItems);
         resp.data.put("gold", gold);
+        resp.data.put("equippedTank", equippedTank);
         
         System.out.println("Sent inventory: " + userTanks.size() + " tanks, " + inventoryItems.size() + " items to " + username);
         send(resp);

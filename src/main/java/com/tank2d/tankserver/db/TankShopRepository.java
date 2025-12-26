@@ -162,4 +162,60 @@ public class TankShopRepository {
             return false;
         }
     }
+    
+    /**
+     * Lấy thông tin tank đang được equip của user
+     */
+    public Map<String, Object> getEquippedTank(int userId) {
+        String sql = """
+            SELECT 
+                t.id,
+                t.name,
+                t.description
+            FROM user_tank ut
+            JOIN tank t ON ut.tank_id = t.id
+            WHERE ut.user_id = ? AND ut.is_equipped = 1
+        """;
+        
+        String attrSql = """
+            SELECT a.name, ta.attribute_value
+            FROM tank_attribute ta
+            JOIN attribute a ON ta.attribute_id = a.id
+            WHERE ta.tank_id = ?
+        """;
+        
+        try (Connection conn = Connector.getConnection();
+             PreparedStatement ps = conn.prepareStatement(sql);
+             PreparedStatement attrPs = conn.prepareStatement(attrSql)) {
+            
+            ps.setInt(1, userId);
+            ResultSet rs = ps.executeQuery();
+            
+            if (rs.next()) {
+                Map<String, Object> tank = new HashMap<>();
+                int tankId = rs.getInt("id");
+                tank.put("tankId", tankId);
+                tank.put("name", rs.getString("name"));
+                tank.put("description", rs.getString("description"));
+                
+                // Load attributes
+                Map<String, Double> attributes = new HashMap<>();
+                attrPs.setInt(1, tankId);
+                try (ResultSet attrRs = attrPs.executeQuery()) {
+                    while (attrRs.next()) {
+                        attributes.put(attrRs.getString("name"), attrRs.getDouble("attribute_value"));
+                    }
+                }
+                tank.put("attributes", attributes);
+                
+                return tank;
+            }
+            
+        } catch (Exception e) {
+            System.out.println("[TankShopRepository] Error getting equipped tank: " + e.getMessage());
+            e.printStackTrace();
+        }
+        
+        return null;
+    }
 }

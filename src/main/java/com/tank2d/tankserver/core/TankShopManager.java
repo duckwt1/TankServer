@@ -4,11 +4,13 @@ import com.tank2d.tankserver.core.shop.BuyResult;
 import com.tank2d.tankserver.core.shop.ShopItem;
 import com.tank2d.tankserver.db.AccountRepository;
 import com.tank2d.tankserver.db.Connector;
+import com.tank2d.tankserver.db.TankRepository;
 import com.tank2d.tankserver.db.TankShopRepository;
 
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Business Logic Layer for Tank Shop
@@ -101,5 +103,19 @@ public class TankShopManager {
      */
     public static boolean equipTank(int userId, int tankId) {
         return tankRepo.equipTank(userId, tankId);
+    }
+    
+    /**
+     * Lấy thông tin tank đang được equip của user
+     */
+    public static Map<String, Object> getEquippedTank(int userId) {
+        return tankRepo.getEquippedTank(userId);
+    }
+    
+    /**
+     * Lấy tất cả tanks của user
+     */
+    public static List<Map<String, Object>> getUserTanks(int userId) {
+        return TankRepository.getUserTanks(userId);
     }
 }
