@@ -12,6 +12,7 @@ public class Room {
     private int maxPlayers;
     private String password;
     private String selectedMap = "map1"; // Default map
+    private int botCount = 0; // Number of AI bots
 
     public Room(int id, String name, ClientHandler host, int maxPlayers, String password) {
         this.id = id;
@@ -33,6 +34,9 @@ public class Room {
     
     public String getSelectedMap() { return selectedMap; }
     public void setSelectedMap(String selectedMap) { this.selectedMap = selectedMap; }
+    
+    public int getBotCount() { return botCount; }
+    public void setBotCount(int botCount) { this.botCount = botCount; }
     
     public boolean checkPassword(String inputPassword) {
         if (!hasPassword()) return true;

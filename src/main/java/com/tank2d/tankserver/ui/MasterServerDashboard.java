@@ -1,6 +1,7 @@
 package com.tank2d.tankserver.ui;
 
 import com.tank2d.tankserver.core.AssetHttpServer;
+import com.tank2d.tankserver.core.ItemShopManager;
 import com.tank2d.tankserver.core.MasterServer;
 import com.tank2d.tankserver.core.room.Room;
 import com.tank2d.tankserver.core.room.RoomManager;
@@ -75,6 +76,29 @@ public class MasterServerDashboard implements Initializable {
     @FXML private Label lblTankIconPath;
     @FXML private Button btnUploadTankIcon;
     
+    // Item Management
+    @FXML private TableView<ItemInfo> tblItems;
+    @FXML private TableColumn<ItemInfo, Integer> colItemId;
+    @FXML private TableColumn<ItemInfo, String> colItemName;
+    @FXML private TableColumn<ItemInfo, String> colItemType;
+    @FXML private TableColumn<ItemInfo, String> colItemRarity;
+    @FXML private TableColumn<ItemInfo, Integer> colItemPrice;
+    @FXML private TextField txtItemName;
+    @FXML private TextArea txtItemDesc;
+    @FXML private TextField txtItemPrice;
+    @FXML private ComboBox<String> cmbItemType;
+    @FXML private ComboBox<String> cmbItemRarity;
+    @FXML private Slider sldItemHP;
+    @FXML private Slider sldItemMP;
+    @FXML private Label lblItemHPValue;
+    @FXML private Label lblItemMPValue;
+    @FXML private Button btnCreateItem;
+    @FXML private Button btnUpdateItem;
+    @FXML private Button btnDeleteItem;
+    @FXML private javafx.scene.image.ImageView imgItemPreview;
+    @FXML private Label lblItemIconPath;
+    @FXML private Button btnUploadItemIcon;
+    
     @FXML private TextArea txtLog;
 
     // ================== PANELS ==================
@@ -82,7 +106,7 @@ public class MasterServerDashboard implements Initializable {
     @FXML private VBox paneUsers;
     @FXML private VBox paneRooms;
     @FXML private HBox paneTanks;
-    @FXML private VBox paneItems;
+    @FXML private HBox paneItems;
     @FXML private Label lblCurrentPage;
 
     // ================== INTERNAL STATE ==================
@@ -97,8 +121,10 @@ public class MasterServerDashboard implements Initializable {
     private final ObservableList<RoomInfo> roomList = FXCollections.observableArrayList();
     private final ObservableList<UserInfo> userList = FXCollections.observableArrayList();
     private final ObservableList<TankInfo> tankList = FXCollections.observableArrayList();
+    private final ObservableList<ItemInfo> itemList = FXCollections.observableArrayList();
 
-    private File selectedTankIcon; // For upload
+    private File selectedTankIcon; // For tank upload
+    private File selectedItemIcon; // For item upload
 
     // =====================================================
 
@@ -109,6 +135,7 @@ public class MasterServerDashboard implements Initializable {
         setupRoomTable();
         setupUserTable();
         setupTankTable();
+        setupItemTable();
         addLog("Dashboard initialized");
         updateTotalUsersCount();
     }
@@ -190,6 +217,42 @@ public class MasterServerDashboard implements Initializable {
         if (sldSpeed != null && lblSpeedValue != null) {
             sldSpeed.valueProperty().addListener((obs, oldVal, newVal) -> 
                 lblSpeedValue.setText(String.format("%.1f", newVal)));
+        }
+    }
+    
+    private void setupItemTable() {
+        if (colItemId != null) colItemId.setCellValueFactory(new PropertyValueFactory<>("id"));
+        if (colItemName != null) colItemName.setCellValueFactory(new PropertyValueFactory<>("name"));
+        if (colItemType != null) colItemType.setCellValueFactory(new PropertyValueFactory<>("type"));
+        if (colItemRarity != null) colItemRarity.setCellValueFactory(new PropertyValueFactory<>("rarity"));
+        if (colItemPrice != null) colItemPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
+        if (tblItems != null) {
+            tblItems.setItems(itemList);
+            
+            // Selection listener
+            tblItems.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null) {
+                    populateItemEditor(newVal);
+                }
+            });
+        }
+        
+        // Slider value listeners
+        if (sldItemHP != null && lblItemHPValue != null) {
+            sldItemHP.valueProperty().addListener((obs, oldVal, newVal) -> 
+                lblItemHPValue.setText(String.format("%.0f", newVal)));
+        }
+        if (sldItemMP != null && lblItemMPValue != null) {
+            sldItemMP.valueProperty().addListener((obs, oldVal, newVal) -> 
+                lblItemMPValue.setText(String.format("%.0f", newVal)));
+        }
+        
+        // Setup ComboBox items
+        if (cmbItemType != null) {
+            cmbItemType.getItems().addAll("consumable", "equipment", "upgrade");
+        }
+        if (cmbItemRarity != null) {
+            cmbItemRarity.getItems().addAll("common", "rare", "epic", "legendary");
         }
     }
     
@@ -594,11 +657,243 @@ public class MasterServerDashboard implements Initializable {
         }
     }
 
+    // -------------------- ITEM MANAGEMENT --------------------
+    
+    private void loadAllItems() {
+        new Thread(() -> {
+            List<Map<String, Object>> items = ItemShopManager.getAllItemsForManagement();
+            Platform.runLater(() -> {
+                itemList.clear();
+                for (var item : items) {
+                    Map<String, Double> attrs = (Map<String, Double>) item.get("attributes");
+                    itemList.add(new ItemInfo(
+                        (int) item.get("id"),
+                        (String) item.get("name"),
+                        (String) item.get("type"),
+                        (String) item.get("rarity"),
+                        attrs.getOrDefault("hp", 0.0),
+                        attrs.getOrDefault("mp", 0.0),
+                        (int) item.get("price")
+                    ));
+                }
+                addLog("Loaded " + itemList.size() + " items");
+            });
+        }).start();
+    }
+    
+    private void populateItemEditor(ItemInfo item) {
+        if (txtItemName != null) txtItemName.setText(item.getName());
+        if (txtItemPrice != null) txtItemPrice.setText(String.valueOf(item.getPrice()));
+        if (cmbItemType != null) cmbItemType.setValue(item.getType());
+        if (cmbItemRarity != null) cmbItemRarity.setValue(item.getRarity());
+        if (sldItemHP != null) sldItemHP.setValue(item.getHpBoost());
+        if (sldItemMP != null) sldItemMP.setValue(item.getMpBoost());
+        
+        // Load item icon
+        System.out.println("[Dashboard] Loading icon for item: " + item.getName());
+        if (assetServer != null && imgItemPreview != null && lblItemIconPath != null) {
+            try {
+                String imageUrl = assetServer.getItemAssetUrl(item.getName());
+                System.out.println("[Dashboard] Loading image from: " + imageUrl);
+                
+                javafx.scene.image.Image image = new javafx.scene.image.Image(imageUrl, true);
+                imgItemPreview.setImage(image);
+                
+                String fileName = item.getName().toLowerCase().replace(" ", "_") + ".png";
+                lblItemIconPath.setText(fileName);
+                System.out.println("[Dashboard] Image loaded successfully");
+            } catch (Exception e) {
+                System.err.println("[Dashboard] Failed to load icon: " + e.getMessage());
+                imgItemPreview.setImage(null);
+                lblItemIconPath.setText("No icon found");
+            }
+        }
+    }
+    
+    private void clearItemEditor() {
+        if (txtItemName != null) txtItemName.clear();
+        if (txtItemDesc != null) txtItemDesc.clear();
+        if (txtItemPrice != null) txtItemPrice.clear();
+        if (cmbItemType != null) cmbItemType.setValue(null);
+        if (cmbItemRarity != null) cmbItemRarity.setValue(null);
+        if (sldItemHP != null) sldItemHP.setValue(0);
+        if (sldItemMP != null) sldItemMP.setValue(0);
+        if (tblItems != null) tblItems.getSelectionModel().clearSelection();
+        if (imgItemPreview != null) imgItemPreview.setImage(null);
+        if (lblItemIconPath != null) lblItemIconPath.setText("No file selected");
+        selectedItemIcon = null;
+    }
+    
+    @FXML
+    private void onCreateItem() {
+        try {
+            String name = txtItemName.getText().trim();
+            String desc = txtItemDesc != null ? txtItemDesc.getText().trim() : "New item";
+            int price = Integer.parseInt(txtItemPrice.getText().trim());
+            String type = cmbItemType.getValue();
+            String rarity = cmbItemRarity.getValue();
+            
+            if (name.isEmpty()) {
+                showAlert("Error", "Item name is required!");
+                return;
+            }
+            if (type == null) {
+                showAlert("Error", "Please select item type!");
+                return;
+            }
+            if (rarity == null) {
+                showAlert("Error", "Please select rarity!");
+                return;
+            }
+            
+            Map<String, Double> attributes = new java.util.HashMap<>();
+            if (sldItemHP.getValue() > 0) attributes.put("hp", sldItemHP.getValue());
+            if (sldItemMP.getValue() > 0) attributes.put("mp", sldItemMP.getValue());
+            
+            new Thread(() -> {
+                boolean success = ItemShopManager.createItem(name, desc, price, type, rarity, attributes);
+                
+                // Save asset if uploaded
+                if (success && selectedItemIcon != null && assetServer != null) {
+                    assetServer.saveItemAsset(name, selectedItemIcon);
+                }
+                
+                Platform.runLater(() -> {
+                    if (success) {
+                        addLog("Created item: " + name);
+                        clearItemEditor();
+                        loadAllItems();
+                        showAlert("Success", "Item created successfully!");
+                    } else {
+                        showAlert("Error", "Failed to create item!");
+                    }
+                });
+            }).start();
+            
+        } catch (NumberFormatException e) {
+            showAlert("Error", "Invalid price value!");
+        }
+    }
+    
+    @FXML
+    private void onUpdateItem() {
+        ItemInfo selected = tblItems.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("Error", "Please select an item to update!");
+            return;
+        }
+        
+        try {
+            String name = txtItemName.getText().trim();
+            String desc = txtItemDesc != null ? txtItemDesc.getText().trim() : selected.getName();
+            int price = Integer.parseInt(txtItemPrice.getText().trim());
+            String type = cmbItemType.getValue();
+            String rarity = cmbItemRarity.getValue();
+            
+            if (name.isEmpty()) {
+                showAlert("Error", "Item name is required!");
+                return;
+            }
+            
+            Map<String, Double> attributes = new java.util.HashMap<>();
+            if (sldItemHP.getValue() > 0) attributes.put("hp", sldItemHP.getValue());
+            if (sldItemMP.getValue() > 0) attributes.put("mp", sldItemMP.getValue());
+            
+            int itemId = selected.getId();
+            new Thread(() -> {
+                boolean success = ItemShopManager.updateItem(itemId, name, desc, price, type, rarity, attributes);
+                
+                // Save new asset if uploaded
+                if (success && selectedItemIcon != null && assetServer != null) {
+                    assetServer.saveItemAsset(name, selectedItemIcon);
+                }
+                
+                Platform.runLater(() -> {
+                    if (success) {
+                        addLog("Updated item: " + name);
+                        clearItemEditor();
+                        loadAllItems();
+                        showAlert("Success", "Item updated successfully!");
+                    } else {
+                        showAlert("Error", "Failed to update item!");
+                    }
+                });
+            }).start();
+            
+        } catch (NumberFormatException e) {
+            showAlert("Error", "Invalid price value!");
+        }
+    }
+    
+    @FXML
+    private void onDeleteItem() {
+        ItemInfo selected = tblItems.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("Error", "Please select an item to delete!");
+            return;
+        }
+        
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirm Delete");
+        confirm.setHeaderText("Delete Item: " + selected.getName());
+        confirm.setContentText("Are you sure you want to delete this item?");
+        
+        confirm.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                int itemId = selected.getId();
+                new Thread(() -> {
+                    boolean success = ItemShopManager.deleteItem(itemId);
+                    
+                    // Delete asset file
+                    if (success && assetServer != null) {
+                        assetServer.deleteItemAsset(selected.getName());
+                    }
+                    
+                    Platform.runLater(() -> {
+                        if (success) {
+                            addLog("Deleted item: " + selected.getName());
+                            clearItemEditor();
+                            loadAllItems();
+                            showAlert("Success", "Item deleted successfully!");
+                        } else {
+                            showAlert("Error", "Failed to delete item!");
+                        }
+                    });
+                }).start();
+            }
+        });
+    }
+    
+    @FXML
+    private void onUploadItemIcon() {
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle("Select Item Icon");
+        fileChooser.getExtensionFilters().add(
+            new javafx.stage.FileChooser.ExtensionFilter("PNG Images", "*.png")
+        );
+        
+        File file = fileChooser.showOpenDialog(btnUploadItemIcon.getScene().getWindow());
+        if (file != null) {
+            selectedItemIcon = file;
+            lblItemIconPath.setText(file.getName());
+            
+            // Show preview
+            try {
+                javafx.scene.image.Image preview = new javafx.scene.image.Image(file.toURI().toString());
+                imgItemPreview.setImage(preview);
+            } catch (Exception e) {
+                addLog("Failed to load image preview: " + e.getMessage());
+            }
+        }
+    }
+
+    // -------------------- NAVIGATION --------------------
     @FXML
     private void showItemManagement(){
         hideAllPanels();
         paneItems.setVisible(true);
         lblCurrentPage.setText("QUẢN LÝ ITEMS");
+        loadAllItems();
     }
     
     private void hideAllPanels() {
@@ -896,6 +1191,34 @@ public class MasterServerDashboard implements Initializable {
         public int getLevel() { return level; }
         public int getGold() { return gold; }
         public String getStatus() { return status; }
+    }
+
+    public static class ItemInfo {
+        private int id;
+        private String name;
+        private String type;
+        private String rarity;
+        private double hpBoost;
+        private double mpBoost;
+        private int price;
+
+        public ItemInfo(int id, String name, String type, String rarity, double hpBoost, double mpBoost, int price) {
+            this.id = id;
+            this.name = name;
+            this.type = type;
+            this.rarity = rarity;
+            this.hpBoost = hpBoost;
+            this.mpBoost = mpBoost;
+            this.price = price;
+        }
+
+        public int getId() { return id; }
+        public String getName() { return name; }
+        public String getType() { return type; }
+        public String getRarity() { return rarity; }
+        public double getHpBoost() { return hpBoost; }
+        public double getMpBoost() { return mpBoost; }
+        public int getPrice() { return price; }
     }
 
     public static class ServerEvent {

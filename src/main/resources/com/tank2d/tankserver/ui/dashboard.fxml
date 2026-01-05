@@ -8,12 +8,12 @@
 
 <BorderPane xmlns="http://javafx.com/javafx/17" xmlns:fx="http://javafx.com/fxml/1"
             fx:controller="com.tank2d.tankserver.ui.MasterServerDashboard"
-            prefHeight="800.0" prefWidth="1200.0"
+            prefHeight="750.0" prefWidth="1000.0"
             style="-fx-background-color: #8ab48f;">
 
    <!-- Left Sidebar: Navigation Menu -->
    <left>
-      <VBox spacing="10" prefWidth="220.0" style="-fx-background-color: #4a6859; -fx-border-color: #704214; -fx-border-width: 0 4 0 0;">
+      <VBox spacing="10" prefWidth="180.0" style="-fx-background-color: #4a6859; -fx-border-color: #704214; -fx-border-width: 0 4 0 0;">
          <padding>
             <Insets top="20" right="15" bottom="20" left="15" />
          </padding>
@@ -158,10 +158,10 @@
                <TableView fx:id="tblUsers" VBox.vgrow="ALWAYS"
                           style="-fx-background-color: white; -fx-border-color: #704214; -fx-border-width: 3;">
                   <columns>
-                     <TableColumn fx:id="colUserUsername" text="Username" prefWidth="200" />
-                     <TableColumn fx:id="colUserLevel" text="Level" prefWidth="100" />
-                     <TableColumn fx:id="colUserGold" text="Gold" prefWidth="120" />
-                     <TableColumn fx:id="colUserStatus" text="Status" prefWidth="120" />
+                     <TableColumn fx:id="colUserUsername" text="Username" prefWidth="180" />
+                     <TableColumn fx:id="colUserLevel" text="Level" prefWidth="80" />
+                     <TableColumn fx:id="colUserGold" text="Gold" prefWidth="100" />
+                     <TableColumn fx:id="colUserStatus" text="Status" prefWidth="100" />
                   </columns>
                </TableView>
 
@@ -191,9 +191,9 @@
                <TableView fx:id="tblRooms" VBox.vgrow="ALWAYS"
                           style="-fx-background-color: white; -fx-border-color: #704214; -fx-border-width: 3;">
                   <columns>
-                     <TableColumn fx:id="colRoomName" text="Room Name" prefWidth="200" />
-                     <TableColumn fx:id="colRoomPlayers" text="Players" prefWidth="100" />
-                     <TableColumn fx:id="colRoomStatus" text="Status" prefWidth="120" />
+                     <TableColumn fx:id="colRoomName" text="Room Name" prefWidth="180" />
+                     <TableColumn fx:id="colRoomPlayers" text="Players" prefWidth="80" />
+                     <TableColumn fx:id="colRoomStatus" text="Status" prefWidth="100" />
                   </columns>
                </TableView>
                <Button onAction="#onCloseRoom" text="Close Selected Room" prefHeight="35.0"
@@ -205,15 +205,15 @@
                <TableView fx:id="tblTanks" HBox.hgrow="ALWAYS"
                           style="-fx-background-color: white; -fx-border-color: #704214; -fx-border-width: 3;">
                   <columns>
-                     <TableColumn fx:id="colTankId" text="ID" prefWidth="50" />
-                     <TableColumn fx:id="colTankName" text="Tank Model" prefWidth="150" />
-                     <TableColumn fx:id="colTankHP" text="HP" prefWidth="80" />
-                     <TableColumn fx:id="colTankAttack" text="Attack" prefWidth="80" />
-                     <TableColumn fx:id="colTankSpeed" text="Speed" prefWidth="80" />
-                     <TableColumn fx:id="colTankPrice" text="Price" prefWidth="80" />
+                     <TableColumn fx:id="colTankId" text="ID" prefWidth="40" />
+                     <TableColumn fx:id="colTankName" text="Tank Model" prefWidth="120" />
+                     <TableColumn fx:id="colTankHP" text="HP" prefWidth="60" />
+                     <TableColumn fx:id="colTankAttack" text="Attack" prefWidth="60" />
+                     <TableColumn fx:id="colTankSpeed" text="Speed" prefWidth="60" />
+                     <TableColumn fx:id="colTankPrice" text="Price" prefWidth="60" />
                   </columns>
                </TableView>
-               <VBox prefWidth="320" spacing="15" style="-fx-background-color: #f4e8c1; -fx-padding: 15; -fx-border-color: #704214; -fx-border-width: 3;">
+               <VBox prefWidth="280" spacing="12" style="-fx-background-color: #f4e8c1; -fx-padding: 12; -fx-border-color: #704214; -fx-border-width: 3;">
                   <Label text="TANK EDITOR" textFill="#704214" style="-fx-font-weight: bold; -fx-font-size: 14;"/>
                   <Separator/>
                   
@@ -263,17 +263,67 @@
             </HBox>
 
             <!-- Item Management Panel -->
-            <VBox fx:id="paneItems" spacing="15" visible="false">
-               <TableView fx:id="tblItems" VBox.vgrow="ALWAYS"
+            <HBox fx:id="paneItems" spacing="15" visible="false">
+               <TableView fx:id="tblItems" HBox.hgrow="ALWAYS"
                           style="-fx-background-color: white; -fx-border-color: #704214; -fx-border-width: 3;">
                   <columns>
-                     <TableColumn text="Item Name" prefWidth="150" />
-                     <TableColumn text="Type" prefWidth="100" />
-                     <TableColumn text="Effect Value" prefWidth="150" />
-                     <TableColumn text="Price" prefWidth="100" />
+                     <TableColumn fx:id="colItemId" text="ID" prefWidth="40" />
+                     <TableColumn fx:id="colItemName" text="Item Name" prefWidth="120" />
+                     <TableColumn fx:id="colItemType" text="Type" prefWidth="80" />
+                     <TableColumn fx:id="colItemRarity" text="Rarity" prefWidth="80" />
+                     <TableColumn fx:id="colItemPrice" text="Price" prefWidth="60" />
                   </columns>
                </TableView>
-            </VBox>
+               <VBox prefWidth="280" spacing="12" style="-fx-background-color: #f4e8c1; -fx-padding: 12; -fx-border-color: #704214; -fx-border-width: 3;">
+                  <Label text="ITEM EDITOR" textFill="#704214" style="-fx-font-weight: bold; -fx-font-size: 14;"/>
+                  <Separator/>
+                  
+                  <Label text="Item Name:" textFill="#704214"/>
+                  <TextField fx:id="txtItemName" promptText="Enter item name" style="-fx-background-radius: 5;"/>
+                  
+                  <Label text="Description:" textFill="#704214"/>
+                  <TextArea fx:id="txtItemDesc" promptText="Item description" prefRowCount="2" style="-fx-background-radius: 5;"/>
+                  
+                  <Label text="Price:" textFill="#704214"/>
+                  <TextField fx:id="txtItemPrice" promptText="Base price" style="-fx-background-radius: 5;"/>
+                  
+                  <Label text="Type:" textFill="#704214"/>
+                  <ComboBox fx:id="cmbItemType" prefWidth="Infinity" promptText="Select type"/>
+                  
+                  <Label text="Rarity:" textFill="#704214"/>
+                  <ComboBox fx:id="cmbItemRarity" prefWidth="Infinity" promptText="Select rarity"/>
+                  
+                  <Label text="HP Boost:" textFill="#704214"/>
+                  <Slider fx:id="sldItemHP" min="0" max="100" value="0" majorTickUnit="5" minorTickCount="0" snapToTicks="true" showTickLabels="true" showTickMarks="true"/>
+                  <Label fx:id="lblItemHPValue" text="0" textFill="#704214" style="-fx-font-weight: bold;"/>
+                  
+                  <Label text="MP Boost:" textFill="#704214"/>
+                  <Slider fx:id="sldItemMP" min="0" max="100" value="0" majorTickUnit="5" minorTickCount="0" snapToTicks="true" showTickLabels="true" showTickMarks="true"/>
+                  <Label fx:id="lblItemMPValue" text="0" textFill="#704214" style="-fx-font-weight: bold;"/>
+                  
+                  <Separator/>
+                  <Label text="Item Icon:" textFill="#704214"/>
+                  <HBox spacing="10" alignment="CENTER_LEFT">
+                     <VBox alignment="CENTER" style="-fx-border-color: #704214; -fx-border-width: 2; -fx-padding: 5;">
+                        <javafx.scene.image.ImageView fx:id="imgItemPreview" fitWidth="64" fitHeight="64" preserveRatio="true"/>
+                     </VBox>
+                     <VBox spacing="5" HBox.hgrow="ALWAYS">
+                        <Label fx:id="lblItemIconPath" text="No file selected" textFill="#8a6f47" style="-fx-font-size: 10;"/>
+                        <Button fx:id="btnUploadItemIcon" onAction="#onUploadItemIcon" text="📁 Upload PNG" maxWidth="Infinity"
+                                style="-fx-background-color: #d4a574; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                     </VBox>
+                  </HBox>
+                  
+                  <HBox spacing="10">
+                     <Button fx:id="btnCreateItem" onAction="#onCreateItem" text="CREATE NEW" HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                             style="-fx-background-color: #6b9080; -fx-border-color: #4a6859; -fx-border-width: 2; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                     <Button fx:id="btnUpdateItem" onAction="#onUpdateItem" text="UPDATE" HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                             style="-fx-background-color: #d4a574; -fx-border-color: #a67c52; -fx-border-width: 2; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                  </HBox>
+                  <Button fx:id="btnDeleteItem" onAction="#onDeleteItem" text="DELETE ITEM" maxWidth="Infinity"
+                          style="-fx-background-color: #c54245; -fx-border-color: #8b2e31; -fx-border-width: 2; -fx-text-fill: white; -fx-font-weight: bold;"/>
+               </VBox>
+            </HBox>
          </StackPane>
       </VBox>
    </center>

@@ -22,6 +22,7 @@ public class PacketType {
     public static final int START_GAME = 17;
     public static final int SELECT_MAP = 23;
     public static final int MAP_SELECTED = 24;
+    public static final int BOT_COUNT_CHANGED = 33;
     public static final int REPORT_UDP_ENDPOINT = 99;
 
     // Shop

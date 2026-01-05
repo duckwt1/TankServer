@@ -62,9 +62,18 @@ public class ClientHandler implements Runnable {
                 return;
             }
         }
+        
+        // Get bot count from packet or use room's bot count
+        int botCount = 0;
+        if (p.data.containsKey("botCount")) {
+            botCount = ((Number) p.data.get("botCount")).intValue();
+            currentRoom.setBotCount(botCount);
+        } else {
+            botCount = currentRoom.getBotCount();
+        }
 
 
-        System.out.println("Starting game in room: " + currentRoom.getName());
+        System.out.println("Starting game in room: " + currentRoom.getName() + " with " + botCount + " bots");
 
         // Lấy map đã chọn
         String selectedMap = currentRoom.getSelectedMap();
@@ -108,11 +117,12 @@ public class ClientHandler implements Runnable {
             start.data.put("isHost", currentRoom.getHost().getUsername());
             start.data.put("players", playersData);
             start.data.put("mapId", mapId);
+            start.data.put("botCount", botCount); // Send bot count
             start.data.put("peers", peers); // ← Quan trọng: gửi danh sách peers để P2P
             client.send(start);
         }
 
-        System.out.println("Sent START_GAME with " + peers.size() + " peers to all players.");
+        System.out.println("Sent START_GAME with " + peers.size() + " peers and " + botCount + " bots to all players.");
     }
 
     @Override
@@ -168,6 +178,7 @@ public class ClientHandler implements Runnable {
             case PacketType.PLAYER_READY -> handlePlayerReady(p);
             case PacketType.START_GAME -> handleStartGame(p);
             case PacketType.SELECT_MAP -> handleSelectMap(p);
+            case PacketType.BOT_COUNT_CHANGED -> handleBotCountChanged(p);
             case PacketType.ROOM_LIST -> handleRoomList(p);
             case PacketType.SHOP_LIST -> handleShopList(p);
             case PacketType.BUY_ITEM -> handleBuyItem(p);
@@ -328,6 +339,37 @@ public class ClientHandler implements Runnable {
         // Broadcast to all players in room
         Packet resp = new Packet(PacketType.MAP_SELECTED);
         resp.data.put("map", selectedMap);
+        
+        for (ClientHandler client : currentRoom.getPlayers()) {
+            client.send(resp);
+        }
+    }
+    
+    private void handleBotCountChanged(Packet p) {
+        if (currentRoom == null) {
+            sendError("You are not in a room!");
+            return;
+        }
+        
+        if (!currentRoom.getHost().equals(this)) {
+            sendError("Only host can change bot count!");
+            return;
+        }
+        
+        int botCount = ((Number) p.data.get("botCount")).intValue();
+        
+        // Validate bot count (0-10)
+        if (botCount < 0 || botCount > 10) {
+            sendError("Invalid bot count! Must be 0-10");
+            return;
+        }
+        
+        currentRoom.setBotCount(botCount);
+        System.out.println("Host " + username + " set bot count to: " + botCount);
+        
+        // Broadcast to all players in room
+        Packet resp = new Packet(PacketType.BOT_COUNT_CHANGED);
+        resp.data.put("botCount", botCount);
         
         for (ClientHandler client : currentRoom.getPlayers()) {
             client.send(resp);
