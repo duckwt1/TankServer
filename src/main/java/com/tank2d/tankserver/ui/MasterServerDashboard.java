@@ -1,5 +1,6 @@
 package com.tank2d.tankserver.ui;
 
+import com.tank2d.tankserver.core.AssetHttpServer;
 import com.tank2d.tankserver.core.MasterServer;
 import com.tank2d.tankserver.core.room.Room;
 import com.tank2d.tankserver.core.room.RoomManager;
@@ -14,6 +15,8 @@ import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.layout.HBox;
 import javafx.scene.layout.VBox;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.sql.Timestamp;
 import java.time.Duration;
@@ -68,6 +71,9 @@ public class MasterServerDashboard implements Initializable {
     @FXML private Button btnCreateTank;
     @FXML private Button btnUpdateTank;
     @FXML private Button btnDeleteTank;
+    @FXML private javafx.scene.image.ImageView imgTankPreview;
+    @FXML private Label lblTankIconPath;
+    @FXML private Button btnUploadTankIcon;
     
     @FXML private TextArea txtLog;
 
@@ -81,6 +87,7 @@ public class MasterServerDashboard implements Initializable {
 
     // ================== INTERNAL STATE ==================
     private MasterServer server;
+    private AssetHttpServer assetServer;
     private boolean serverRunning = false;
     private LocalDateTime startTime;
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss");
@@ -90,6 +97,8 @@ public class MasterServerDashboard implements Initializable {
     private final ObservableList<RoomInfo> roomList = FXCollections.observableArrayList();
     private final ObservableList<UserInfo> userList = FXCollections.observableArrayList();
     private final ObservableList<TankInfo> tankList = FXCollections.observableArrayList();
+
+    private File selectedTankIcon; // For upload
 
     // =====================================================
 
@@ -205,6 +214,10 @@ public class MasterServerDashboard implements Initializable {
             server = new MasterServer(this::onServerEvent);
             RoomManager.dashboard = this; // connect UI <-> server logic
 
+            // Start asset HTTP server on port 8080
+            assetServer = new AssetHttpServer(8080);
+            assetServer.start();
+
             new Thread(() -> {
                 try {
                     server.start(port);
@@ -233,16 +246,21 @@ public class MasterServerDashboard implements Initializable {
 
         } catch (NumberFormatException e) {
             addLog("Invalid port number!");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
         }
     }
 
     private void stopServer() {
         if (server != null) {
             server.stop();
-            serverRunning = false;
-            onServerStopped();
-            addLog("Server stopped");
         }
+        if (assetServer != null) {
+            assetServer.stop();
+        }
+        serverRunning = false;
+        onServerStopped();
+        addLog("Server stopped");
     }
 
     private void onServerStopped() {
@@ -367,9 +385,9 @@ public class MasterServerDashboard implements Initializable {
                     tankList.add(new TankInfo(
                         (int) tank.get("id"),
                         (String) tank.get("name"),
-                        attrs.getOrDefault("health", 100.0),
-                        attrs.getOrDefault("damage", 50.0),
-                        attrs.getOrDefault("speed", 5.0),
+                        attrs.getOrDefault("hp", 100.0),
+                        attrs.getOrDefault("dmg", 50.0),
+                        attrs.getOrDefault("spd", 5.0),
                         (int) tank.get("price")
                     ));
                 }
@@ -383,6 +401,33 @@ public class MasterServerDashboard implements Initializable {
         if (sldHP != null) sldHP.setValue(tank.getHealth());
         if (sldAttack != null) sldAttack.setValue(tank.getDamage());
         if (sldSpeed != null) sldSpeed.setValue(tank.getSpeed());
+        
+        // Load tank icon if server is running
+        System.out.println("[Dashboard] Loading icon for tank: " + tank.getName());
+        System.out.println("[Dashboard] assetServer: " + assetServer);
+        System.out.println("[Dashboard] imgTankPreview: " + imgTankPreview);
+        System.out.println("[Dashboard] lblTankIconPath: " + lblTankIconPath);
+        
+        if (assetServer != null && imgTankPreview != null && lblTankIconPath != null) {
+            try {
+                String imageUrl = assetServer.getTankAssetUrl(tank.getName());
+                System.out.println("[Dashboard] Loading image from: " + imageUrl);
+                
+                javafx.scene.image.Image image = new javafx.scene.image.Image(imageUrl, true);
+                imgTankPreview.setImage(image);
+                
+                String fileName = tank.getName().toLowerCase().replace(" ", "_") + ".png";
+                lblTankIconPath.setText(fileName);
+                System.out.println("[Dashboard] Image loaded successfully");
+            } catch (Exception e) {
+                System.err.println("[Dashboard] Failed to load icon: " + e.getMessage());
+                e.printStackTrace();
+                imgTankPreview.setImage(null);
+                lblTankIconPath.setText("No icon found");
+            }
+        } else {
+            System.out.println("[Dashboard] Cannot load icon - missing components");
+        }
     }
     
     private void clearTankEditor() {
@@ -393,6 +438,9 @@ public class MasterServerDashboard implements Initializable {
         if (sldAttack != null) sldAttack.setValue(50);
         if (sldSpeed != null) sldSpeed.setValue(5);
         if (tblTanks != null) tblTanks.getSelectionModel().clearSelection();
+        if (imgTankPreview != null) imgTankPreview.setImage(null);
+        if (lblTankIconPath != null) lblTankIconPath.setText("No file selected");
+        selectedTankIcon = null;
     }
     
     @FXML
@@ -408,12 +456,18 @@ public class MasterServerDashboard implements Initializable {
             }
             
             Map<String, Double> attributes = new java.util.HashMap<>();
-            attributes.put("health", sldHP.getValue());
-            attributes.put("damage", sldAttack.getValue());
-            attributes.put("speed", sldSpeed.getValue());
+            attributes.put("hp", sldHP.getValue());
+            attributes.put("dmg", sldAttack.getValue());
+            attributes.put("spd", sldSpeed.getValue());
             
             new Thread(() -> {
                 boolean success = com.tank2d.tankserver.core.TankShopManager.createTank(name, desc, price, attributes);
+                
+                // Save asset if uploaded
+                if (success && selectedTankIcon != null && assetServer != null) {
+                    assetServer.saveTankAsset(name, selectedTankIcon);
+                }
+                
                 Platform.runLater(() -> {
                     if (success) {
                         addLog("Created tank: " + name);
@@ -450,13 +504,19 @@ public class MasterServerDashboard implements Initializable {
             }
             
             Map<String, Double> attributes = new java.util.HashMap<>();
-            attributes.put("health", sldHP.getValue());
-            attributes.put("damage", sldAttack.getValue());
-            attributes.put("speed", sldSpeed.getValue());
+            attributes.put("hp", sldHP.getValue());
+            attributes.put("dmg", sldAttack.getValue());
+            attributes.put("spd", sldSpeed.getValue());
             
             int tankId = selected.getId();
             new Thread(() -> {
                 boolean success = com.tank2d.tankserver.core.TankShopManager.updateTank(tankId, name, desc, price, attributes);
+                
+                // Save new asset if uploaded
+                if (success && selectedTankIcon != null && assetServer != null) {
+                    assetServer.saveTankAsset(name, selectedTankIcon);
+                }
+                
                 Platform.runLater(() -> {
                     if (success) {
                         addLog("Updated tank: " + name);
@@ -490,8 +550,12 @@ public class MasterServerDashboard implements Initializable {
         confirm.showAndWait().ifPresent(response -> {
             if (response == ButtonType.OK) {
                 int tankId = selected.getId();
+                String tankName = selected.getName();
                 new Thread(() -> {
                     boolean success = com.tank2d.tankserver.core.TankShopManager.deleteTank(tankId);
+                    if (success && assetServer != null) {
+                        assetServer.deleteTankAsset(tankName);
+                    }
                     Platform.runLater(() -> {
                         if (success) {
                             addLog("Deleted tank: " + selected.getName());
@@ -505,6 +569,29 @@ public class MasterServerDashboard implements Initializable {
                 }).start();
             }
         });
+    }
+
+    @FXML
+    private void onUploadTankIcon() {
+        javafx.stage.FileChooser fileChooser = new javafx.stage.FileChooser();
+        fileChooser.setTitle("Select Tank Icon");
+        fileChooser.getExtensionFilters().add(
+            new javafx.stage.FileChooser.ExtensionFilter("PNG Images", "*.png")
+        );
+        
+        File file = fileChooser.showOpenDialog(btnUploadTankIcon.getScene().getWindow());
+        if (file != null) {
+            selectedTankIcon = file;
+            lblTankIconPath.setText(file.getName());
+            
+            // Show preview
+            try {
+                javafx.scene.image.Image preview = new javafx.scene.image.Image(file.toURI().toString());
+                imgTankPreview.setImage(preview);
+            } catch (Exception e) {
+                addLog("Failed to load image preview: " + e.getMessage());
+            }
+        }
     }
 
     @FXML

@@ -3,6 +3,7 @@ module com.tank2d.tankserver {
     requires javafx.fxml;
     requires java.sql;
     requires org.json;
+    requires jdk.httpserver;
 
 
     opens com.tank2d.tankserver.ui to javafx.fxml;

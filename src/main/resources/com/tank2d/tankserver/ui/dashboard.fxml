@@ -227,16 +227,29 @@
                   <TextField fx:id="txtTankPrice" promptText="Base price" style="-fx-background-radius: 5;"/>
                   
                   <Label text="Health (HP):" textFill="#704214"/>
-                  <Slider fx:id="sldHP" max="2000" value="100" showTickLabels="true" showTickMarks="true"/>
+                  <Slider fx:id="sldHP" min="10" max="2000" value="100" majorTickUnit="10" minorTickCount="0" snapToTicks="true" showTickLabels="true" showTickMarks="true"/>
                   <Label fx:id="lblHPValue" text="100" textFill="#704214" style="-fx-font-weight: bold;"/>
                   
                   <Label text="Damage:" textFill="#704214"/>
-                  <Slider fx:id="sldAttack" max="500" value="50" showTickLabels="true" showTickMarks="true"/>
+                  <Slider fx:id="sldAttack" min="1" max="500" value="50" majorTickUnit="5" minorTickCount="0" snapToTicks="true" showTickLabels="true" showTickMarks="true"/>
                   <Label fx:id="lblAttackValue" text="50" textFill="#704214" style="-fx-font-weight: bold;"/>
                   
                   <Label text="Speed:" textFill="#704214"/>
-                  <Slider fx:id="sldSpeed" max="10" value="5" showTickLabels="true" showTickMarks="true"/>
+                  <Slider fx:id="sldSpeed" min="1" max="10" value="5" majorTickUnit="1" minorTickCount="0" snapToTicks="true" showTickLabels="true" showTickMarks="true"/>
                   <Label fx:id="lblSpeedValue" text="5" textFill="#704214" style="-fx-font-weight: bold;"/>
+                  
+                  <Separator/>
+                  <Label text="Tank Icon:" textFill="#704214"/>
+                  <HBox spacing="10" alignment="CENTER_LEFT">
+                     <VBox alignment="CENTER" style="-fx-border-color: #704214; -fx-border-width: 2; -fx-padding: 5;">
+                        <javafx.scene.image.ImageView fx:id="imgTankPreview" fitWidth="64" fitHeight="64" preserveRatio="true"/>
+                     </VBox>
+                     <VBox spacing="5" HBox.hgrow="ALWAYS">
+                        <Label fx:id="lblTankIconPath" text="No file selected" textFill="#8a6f47" style="-fx-font-size: 10;"/>
+                        <Button fx:id="btnUploadTankIcon" onAction="#onUploadTankIcon" text="📁 Upload PNG" maxWidth="Infinity"
+                                style="-fx-background-color: #d4a574; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                     </VBox>
+                  </HBox>
                   
                   <HBox spacing="10">
                      <Button fx:id="btnCreateTank" onAction="#onCreateTank" text="CREATE NEW" HBox.hgrow="ALWAYS" maxWidth="Infinity"
