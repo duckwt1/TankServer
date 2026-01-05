@@ -48,6 +48,27 @@ public class MasterServerDashboard implements Initializable {
     @FXML private TableColumn<UserInfo, Integer> colUserGold;
     @FXML private TableColumn<UserInfo, String> colUserStatus;
     
+    // Tank Management
+    @FXML private TableView<TankInfo> tblTanks;
+    @FXML private TableColumn<TankInfo, Integer> colTankId;
+    @FXML private TableColumn<TankInfo, String> colTankName;
+    @FXML private TableColumn<TankInfo, Double> colTankHP;
+    @FXML private TableColumn<TankInfo, Double> colTankAttack;
+    @FXML private TableColumn<TankInfo, Double> colTankSpeed;
+    @FXML private TableColumn<TankInfo, Integer> colTankPrice;
+    @FXML private TextField txtTankName;
+    @FXML private TextArea txtTankDesc;
+    @FXML private TextField txtTankPrice;
+    @FXML private Slider sldHP;
+    @FXML private Slider sldAttack;
+    @FXML private Slider sldSpeed;
+    @FXML private Label lblHPValue;
+    @FXML private Label lblAttackValue;
+    @FXML private Label lblSpeedValue;
+    @FXML private Button btnCreateTank;
+    @FXML private Button btnUpdateTank;
+    @FXML private Button btnDeleteTank;
+    
     @FXML private TextArea txtLog;
 
     // ================== PANELS ==================
@@ -68,6 +89,7 @@ public class MasterServerDashboard implements Initializable {
     private final ObservableList<ClientInfo> clientList = FXCollections.observableArrayList();
     private final ObservableList<RoomInfo> roomList = FXCollections.observableArrayList();
     private final ObservableList<UserInfo> userList = FXCollections.observableArrayList();
+    private final ObservableList<TankInfo> tankList = FXCollections.observableArrayList();
 
     // =====================================================
 
@@ -77,6 +99,7 @@ public class MasterServerDashboard implements Initializable {
         setupClientTable();
         setupRoomTable();
         setupUserTable();
+        setupTankTable();
         addLog("Dashboard initialized");
         updateTotalUsersCount();
     }
@@ -125,6 +148,39 @@ public class MasterServerDashboard implements Initializable {
                     searchUsers(newVal);
                 }
             });
+        }
+    }
+    
+    private void setupTankTable() {
+        if (colTankId != null) colTankId.setCellValueFactory(new PropertyValueFactory<>("id"));
+        if (colTankName != null) colTankName.setCellValueFactory(new PropertyValueFactory<>("name"));
+        if (colTankHP != null) colTankHP.setCellValueFactory(new PropertyValueFactory<>("health"));
+        if (colTankAttack != null) colTankAttack.setCellValueFactory(new PropertyValueFactory<>("damage"));
+        if (colTankSpeed != null) colTankSpeed.setCellValueFactory(new PropertyValueFactory<>("speed"));
+        if (colTankPrice != null) colTankPrice.setCellValueFactory(new PropertyValueFactory<>("price"));
+        if (tblTanks != null) {
+            tblTanks.setItems(tankList);
+            
+            // Selection listener
+            tblTanks.getSelectionModel().selectedItemProperty().addListener((obs, oldVal, newVal) -> {
+                if (newVal != null) {
+                    populateTankEditor(newVal);
+                }
+            });
+        }
+        
+        // Slider value listeners
+        if (sldHP != null && lblHPValue != null) {
+            sldHP.valueProperty().addListener((obs, oldVal, newVal) -> 
+                lblHPValue.setText(String.format("%.0f", newVal)));
+        }
+        if (sldAttack != null && lblAttackValue != null) {
+            sldAttack.valueProperty().addListener((obs, oldVal, newVal) -> 
+                lblAttackValue.setText(String.format("%.0f", newVal)));
+        }
+        if (sldSpeed != null && lblSpeedValue != null) {
+            sldSpeed.valueProperty().addListener((obs, oldVal, newVal) -> 
+                lblSpeedValue.setText(String.format("%.1f", newVal)));
         }
     }
     
@@ -298,7 +354,157 @@ public class MasterServerDashboard implements Initializable {
     private void showTankManagement(){
         hideAllPanels();
         paneTanks.setVisible(true);
-        lblCurrentPage.setText("QUẢN LÝ TANK");
+        lblCurrentPage.setText("QUẢN LÝ TANK");        loadAllTanks();
+    }
+    
+    private void loadAllTanks() {
+        new Thread(() -> {
+            List<Map<String, Object>> tanks = com.tank2d.tankserver.core.TankShopManager.getAllTanksForManagement();
+            Platform.runLater(() -> {
+                tankList.clear();
+                for (var tank : tanks) {
+                    Map<String, Double> attrs = (Map<String, Double>) tank.get("attributes");
+                    tankList.add(new TankInfo(
+                        (int) tank.get("id"),
+                        (String) tank.get("name"),
+                        attrs.getOrDefault("health", 100.0),
+                        attrs.getOrDefault("damage", 50.0),
+                        attrs.getOrDefault("speed", 5.0),
+                        (int) tank.get("price")
+                    ));
+                }
+                addLog("Loaded " + tankList.size() + " tanks");
+            });
+        }).start();    }
+    
+    private void populateTankEditor(TankInfo tank) {
+        if (txtTankName != null) txtTankName.setText(tank.getName());
+        if (txtTankPrice != null) txtTankPrice.setText(String.valueOf(tank.getPrice()));
+        if (sldHP != null) sldHP.setValue(tank.getHealth());
+        if (sldAttack != null) sldAttack.setValue(tank.getDamage());
+        if (sldSpeed != null) sldSpeed.setValue(tank.getSpeed());
+    }
+    
+    private void clearTankEditor() {
+        if (txtTankName != null) txtTankName.clear();
+        if (txtTankDesc != null) txtTankDesc.clear();
+        if (txtTankPrice != null) txtTankPrice.clear();
+        if (sldHP != null) sldHP.setValue(100);
+        if (sldAttack != null) sldAttack.setValue(50);
+        if (sldSpeed != null) sldSpeed.setValue(5);
+        if (tblTanks != null) tblTanks.getSelectionModel().clearSelection();
+    }
+    
+    @FXML
+    private void onCreateTank() {
+        try {
+            String name = txtTankName.getText().trim();
+            String desc = txtTankDesc != null ? txtTankDesc.getText().trim() : "New tank";
+            int price = Integer.parseInt(txtTankPrice.getText().trim());
+            
+            if (name.isEmpty()) {
+                showAlert("Error", "Tank name is required!");
+                return;
+            }
+            
+            Map<String, Double> attributes = new java.util.HashMap<>();
+            attributes.put("health", sldHP.getValue());
+            attributes.put("damage", sldAttack.getValue());
+            attributes.put("speed", sldSpeed.getValue());
+            
+            new Thread(() -> {
+                boolean success = com.tank2d.tankserver.core.TankShopManager.createTank(name, desc, price, attributes);
+                Platform.runLater(() -> {
+                    if (success) {
+                        addLog("Created tank: " + name);
+                        clearTankEditor();
+                        loadAllTanks();
+                        showAlert("Success", "Tank created successfully!");
+                    } else {
+                        showAlert("Error", "Failed to create tank!");
+                    }
+                });
+            }).start();
+            
+        } catch (NumberFormatException e) {
+            showAlert("Error", "Invalid price value!");
+        }
+    }
+    
+    @FXML
+    private void onUpdateTank() {
+        TankInfo selected = tblTanks.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("Error", "Please select a tank to update!");
+            return;
+        }
+        
+        try {
+            String name = txtTankName.getText().trim();
+            String desc = txtTankDesc != null ? txtTankDesc.getText().trim() : selected.getName();
+            int price = Integer.parseInt(txtTankPrice.getText().trim());
+            
+            if (name.isEmpty()) {
+                showAlert("Error", "Tank name is required!");
+                return;
+            }
+            
+            Map<String, Double> attributes = new java.util.HashMap<>();
+            attributes.put("health", sldHP.getValue());
+            attributes.put("damage", sldAttack.getValue());
+            attributes.put("speed", sldSpeed.getValue());
+            
+            int tankId = selected.getId();
+            new Thread(() -> {
+                boolean success = com.tank2d.tankserver.core.TankShopManager.updateTank(tankId, name, desc, price, attributes);
+                Platform.runLater(() -> {
+                    if (success) {
+                        addLog("Updated tank: " + name);
+                        clearTankEditor();
+                        loadAllTanks();
+                        showAlert("Success", "Tank updated successfully!");
+                    } else {
+                        showAlert("Error", "Failed to update tank!");
+                    }
+                });
+            }).start();
+            
+        } catch (NumberFormatException e) {
+            showAlert("Error", "Invalid price value!");
+        }
+    }
+    
+    @FXML
+    private void onDeleteTank() {
+        TankInfo selected = tblTanks.getSelectionModel().getSelectedItem();
+        if (selected == null) {
+            showAlert("Error", "Please select a tank to delete!");
+            return;
+        }
+        
+        Alert confirm = new Alert(Alert.AlertType.CONFIRMATION);
+        confirm.setTitle("Confirm Delete");
+        confirm.setHeaderText("Delete Tank: " + selected.getName());
+        confirm.setContentText("Are you sure you want to delete this tank? This action cannot be undone.");
+        
+        confirm.showAndWait().ifPresent(response -> {
+            if (response == ButtonType.OK) {
+                int tankId = selected.getId();
+                new Thread(() -> {
+                    boolean success = com.tank2d.tankserver.core.TankShopManager.deleteTank(tankId);
+                    Platform.runLater(() -> {
+                        if (success) {
+                            addLog("Deleted tank: " + selected.getName());
+                            clearTankEditor();
+                            loadAllTanks();
+                            showAlert("Success", "Tank deleted successfully!");
+                        } else {
+                            showAlert("Error", "Failed to delete tank! Tank may be in use by players.");
+                        }
+                    });
+                }).start();
+            }
+        });
     }
 
     @FXML
@@ -556,6 +762,31 @@ public class MasterServerDashboard implements Initializable {
         public String getName() { return name; }
         public String getPlayerCount() { return playerCount; }
         public String getStatus() { return status; }
+    }
+    
+    public static class TankInfo {
+        private int id;
+        private String name;
+        private double health;
+        private double damage;
+        private double speed;
+        private int price;
+
+        public TankInfo(int id, String name, double health, double damage, double speed, int price) {
+            this.id = id;
+            this.name = name;
+            this.health = health;
+            this.damage = damage;
+            this.speed = speed;
+            this.price = price;
+        }
+
+        public int getId() { return id; }
+        public String getName() { return name; }
+        public double getHealth() { return health; }
+        public double getDamage() { return damage; }
+        public double getSpeed() { return speed; }
+        public int getPrice() { return price; }
     }
     
     public static class UserInfo {

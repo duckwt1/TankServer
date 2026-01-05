@@ -21,10 +21,30 @@ public class TankShopManager {
     private static final AccountRepository accountRepo = new AccountRepository();
     
     /**
-     * Lấy danh sách tanks trong shop
+     * Lấy danh sách tanks trong shop (cho client)
      */
     public static List<ShopItem> getAllTanks() {
         return tankRepo.getAllAvailableTanks();
+    }
+    
+    /**
+     * Lấy danh sách tanks cho dashboard management
+     */
+    public static List<Map<String, Object>> getAllTanksForManagement() {
+        List<ShopItem> shopItems = tankRepo.getAllAvailableTanks();
+        List<Map<String, Object>> result = new java.util.ArrayList<>();
+        
+        for (ShopItem item : shopItems) {
+            Map<String, Object> tank = new java.util.HashMap<>();
+            tank.put("id", item.id);
+            tank.put("name", item.name);
+            tank.put("description", item.description);
+            tank.put("price", item.price);
+            tank.put("attributes", item.attributes);
+            result.add(tank);
+        }
+        
+        return result;
     }
     
     /**
@@ -117,5 +137,26 @@ public class TankShopManager {
      */
     public static List<Map<String, Object>> getUserTanks(int userId) {
         return TankRepository.getUserTanks(userId);
+    }
+    
+    /**
+     * Tạo tank mới
+     */
+    public static boolean createTank(String name, String description, int basePrice, Map<String, Double> attributes) {
+        return TankRepository.createTank(name, description, basePrice, attributes);
+    }
+    
+    /**
+     * Cập nhật tank
+     */
+    public static boolean updateTank(int tankId, String name, String description, int basePrice, Map<String, Double> attributes) {
+        return TankRepository.updateTank(tankId, name, description, basePrice, attributes);
+    }
+    
+    /**
+     * Xóa tank
+     */
+    public static boolean deleteTank(int tankId) {
+        return TankRepository.deleteTank(tankId);
     }
 }

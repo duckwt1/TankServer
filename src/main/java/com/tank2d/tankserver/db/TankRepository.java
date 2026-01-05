@@ -107,4 +107,167 @@ public class TankRepository {
             return false;
         }
     }
+    
+    /**
+     * Tạo tank mới trong database
+     */
+    public static boolean createTank(String name, String description, int basePrice, Map<String, Double> attributes) {
+        String tankSql = "INSERT INTO tank (name, description, base_price) VALUES (?, ?, ?)";
+        String attrSql = "INSERT INTO tank_attribute (tank_id, attribute_id, attribute_value) VALUES (?, ?, ?)";
+        
+        try (Connection conn = Connector.getConnection()) {
+            conn.setAutoCommit(false);
+            
+            // Insert tank
+            int tankId;
+            try (PreparedStatement ps = conn.prepareStatement(tankSql, PreparedStatement.RETURN_GENERATED_KEYS)) {
+                ps.setString(1, name);
+                ps.setString(2, description);
+                ps.setInt(3, basePrice);
+                ps.executeUpdate();
+                
+                ResultSet rs = ps.getGeneratedKeys();
+                if (rs.next()) {
+                    tankId = rs.getInt(1);
+                } else {
+                    conn.rollback();
+                    return false;
+                }
+            }
+            
+            // Insert attributes
+            try (PreparedStatement ps = conn.prepareStatement(attrSql)) {
+                for (Map.Entry<String, Double> entry : attributes.entrySet()) {
+                    int attrId = getAttributeId(conn, entry.getKey());
+                    if (attrId > 0) {
+                        ps.setInt(1, tankId);
+                        ps.setInt(2, attrId);
+                        ps.setDouble(3, entry.getValue());
+                        ps.executeUpdate();
+                    }
+                }
+            }
+            
+            conn.commit();
+            System.out.println("[TankRepository] Created tank: " + name);
+            return true;
+            
+        } catch (Exception e) {
+            System.out.println("[TankRepository] Error creating tank: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Cập nhật thông tin tank
+     */
+    public static boolean updateTank(int tankId, String name, String description, int basePrice, Map<String, Double> attributes) {
+        String tankSql = "UPDATE tank SET name = ?, description = ?, base_price = ? WHERE id = ?";
+        String deleteAttrSql = "DELETE FROM tank_attribute WHERE tank_id = ?";
+        String insertAttrSql = "INSERT INTO tank_attribute (tank_id, attribute_id, attribute_value) VALUES (?, ?, ?)";
+        
+        try (Connection conn = Connector.getConnection()) {
+            conn.setAutoCommit(false);
+            
+            // Update tank
+            try (PreparedStatement ps = conn.prepareStatement(tankSql)) {
+                ps.setString(1, name);
+                ps.setString(2, description);
+                ps.setInt(3, basePrice);
+                ps.setInt(4, tankId);
+                ps.executeUpdate();
+            }
+            
+            // Delete old attributes
+            try (PreparedStatement ps = conn.prepareStatement(deleteAttrSql)) {
+                ps.setInt(1, tankId);
+                ps.executeUpdate();
+            }
+            
+            // Insert new attributes
+            try (PreparedStatement ps = conn.prepareStatement(insertAttrSql)) {
+                for (Map.Entry<String, Double> entry : attributes.entrySet()) {
+                    int attrId = getAttributeId(conn, entry.getKey());
+                    if (attrId > 0) {
+                        ps.setInt(1, tankId);
+                        ps.setInt(2, attrId);
+                        ps.setDouble(3, entry.getValue());
+                        ps.executeUpdate();
+                    }
+                }
+            }
+            
+            conn.commit();
+            System.out.println("[TankRepository] Updated tank: " + tankId);
+            return true;
+            
+        } catch (Exception e) {
+            System.out.println("[TankRepository] Error updating tank: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Xóa tank khỏi database
+     */
+    public static boolean deleteTank(int tankId) {
+        // Kiểm tra xem tank có đang được sử dụng không
+        String checkSql = "SELECT COUNT(*) FROM user_tank WHERE tank_id = ?";
+        String deleteAttrSql = "DELETE FROM tank_attribute WHERE tank_id = ?";
+        String deleteTankSql = "DELETE FROM tank WHERE id = ?";
+        
+        try (Connection conn = Connector.getConnection()) {
+            // Check if tank is being used
+            try (PreparedStatement ps = conn.prepareStatement(checkSql)) {
+                ps.setInt(1, tankId);
+                ResultSet rs = ps.executeQuery();
+                if (rs.next() && rs.getInt(1) > 0) {
+                    System.out.println("[TankRepository] Cannot delete tank " + tankId + ": in use by users");
+                    return false;
+                }
+            }
+            
+            conn.setAutoCommit(false);
+            
+            // Delete attributes
+            try (PreparedStatement ps = conn.prepareStatement(deleteAttrSql)) {
+                ps.setInt(1, tankId);
+                ps.executeUpdate();
+            }
+            
+            // Delete tank
+            try (PreparedStatement ps = conn.prepareStatement(deleteTankSql)) {
+                ps.setInt(1, tankId);
+                ps.executeUpdate();
+            }
+            
+            conn.commit();
+            System.out.println("[TankRepository] Deleted tank: " + tankId);
+            return true;
+            
+        } catch (Exception e) {
+            System.out.println("[TankRepository] Error deleting tank: " + e.getMessage());
+            e.printStackTrace();
+            return false;
+        }
+    }
+    
+    /**
+     * Lấy attribute ID từ tên
+     */
+    private static int getAttributeId(Connection conn, String attributeName) {
+        String sql = "SELECT id FROM attribute WHERE name = ?";
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            ps.setString(1, attributeName);
+            ResultSet rs = ps.executeQuery();
+            if (rs.next()) {
+                return rs.getInt("id");
+            }
+        } catch (Exception e) {
+            System.out.println("[TankRepository] Error getting attribute ID: " + e.getMessage());
+        }
+        return 0;
+    }
 }

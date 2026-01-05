@@ -205,21 +205,47 @@
                <TableView fx:id="tblTanks" HBox.hgrow="ALWAYS"
                           style="-fx-background-color: white; -fx-border-color: #704214; -fx-border-width: 3;">
                   <columns>
-                     <TableColumn text="Tank Model" prefWidth="150" />
-                     <TableColumn text="HP" prefWidth="80" />
-                     <TableColumn text="Attack" prefWidth="80" />
-                     <TableColumn text="Speed" prefWidth="80" />
+                     <TableColumn fx:id="colTankId" text="ID" prefWidth="50" />
+                     <TableColumn fx:id="colTankName" text="Tank Model" prefWidth="150" />
+                     <TableColumn fx:id="colTankHP" text="HP" prefWidth="80" />
+                     <TableColumn fx:id="colTankAttack" text="Attack" prefWidth="80" />
+                     <TableColumn fx:id="colTankSpeed" text="Speed" prefWidth="80" />
+                     <TableColumn fx:id="colTankPrice" text="Price" prefWidth="80" />
                   </columns>
                </TableView>
-               <VBox prefWidth="280" spacing="15" style="-fx-background-color: #f4e8c1; -fx-padding: 15; -fx-border-color: #704214; -fx-border-width: 3;">
+               <VBox prefWidth="320" spacing="15" style="-fx-background-color: #f4e8c1; -fx-padding: 15; -fx-border-color: #704214; -fx-border-width: 3;">
                   <Label text="TANK EDITOR" textFill="#704214" style="-fx-font-weight: bold; -fx-font-size: 14;"/>
                   <Separator/>
-                  <Label text="Máu (HP):" textFill="#704214"/>
-                  <Slider fx:id="sldHP" max="2000" showTickLabels="true"/>
-                  <Label text="Sức mạnh:" textFill="#704214"/>
-                  <Slider fx:id="sldAttack" max="500" showTickLabels="true"/>
-                  <Button text="LƯU THÔNG SỐ" maxWidth="Infinity"
-                          style="-fx-background-color: #6b9080; -fx-border-color: #4a6859; -fx-border-width: 3; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                  
+                  <Label text="Tank Name:" textFill="#704214"/>
+                  <TextField fx:id="txtTankName" promptText="Enter tank name" style="-fx-background-radius: 5;"/>
+                  
+                  <Label text="Description:" textFill="#704214"/>
+                  <TextArea fx:id="txtTankDesc" promptText="Tank description" prefRowCount="2" style="-fx-background-radius: 5;"/>
+                  
+                  <Label text="Price:" textFill="#704214"/>
+                  <TextField fx:id="txtTankPrice" promptText="Base price" style="-fx-background-radius: 5;"/>
+                  
+                  <Label text="Health (HP):" textFill="#704214"/>
+                  <Slider fx:id="sldHP" max="2000" value="100" showTickLabels="true" showTickMarks="true"/>
+                  <Label fx:id="lblHPValue" text="100" textFill="#704214" style="-fx-font-weight: bold;"/>
+                  
+                  <Label text="Damage:" textFill="#704214"/>
+                  <Slider fx:id="sldAttack" max="500" value="50" showTickLabels="true" showTickMarks="true"/>
+                  <Label fx:id="lblAttackValue" text="50" textFill="#704214" style="-fx-font-weight: bold;"/>
+                  
+                  <Label text="Speed:" textFill="#704214"/>
+                  <Slider fx:id="sldSpeed" max="10" value="5" showTickLabels="true" showTickMarks="true"/>
+                  <Label fx:id="lblSpeedValue" text="5" textFill="#704214" style="-fx-font-weight: bold;"/>
+                  
+                  <HBox spacing="10">
+                     <Button fx:id="btnCreateTank" onAction="#onCreateTank" text="CREATE NEW" HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                             style="-fx-background-color: #6b9080; -fx-border-color: #4a6859; -fx-border-width: 2; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                     <Button fx:id="btnUpdateTank" onAction="#onUpdateTank" text="UPDATE" HBox.hgrow="ALWAYS" maxWidth="Infinity"
+                             style="-fx-background-color: #d4a574; -fx-border-color: #a67c52; -fx-border-width: 2; -fx-text-fill: white; -fx-font-weight: bold;"/>
+                  </HBox>
+                  <Button fx:id="btnDeleteTank" onAction="#onDeleteTank" text="DELETE TANK" maxWidth="Infinity"
+                          style="-fx-background-color: #c54245; -fx-border-color: #8b2e31; -fx-border-width: 2; -fx-text-fill: white; -fx-font-weight: bold;"/>
                </VBox>
             </HBox>
 
