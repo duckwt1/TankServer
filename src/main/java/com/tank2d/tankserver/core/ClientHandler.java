@@ -72,8 +72,9 @@ public class ClientHandler implements Runnable {
             botCount = currentRoom.getBotCount();
         }
 
+        System.out.println("[Server] 🎮 Starting game in room: " + currentRoom.getName());
+        System.out.println("[Server] 🤖 Bot count: " + botCount + " (from room: " + currentRoom.getBotCount() + ")");
 
-        System.out.println("Starting game in room: " + currentRoom.getName() + " with " + botCount + " bots");
 
         // Lấy map đã chọn
         String selectedMap = currentRoom.getSelectedMap();
@@ -346,13 +347,17 @@ public class ClientHandler implements Runnable {
     }
     
     private void handleBotCountChanged(Packet p) {
+        System.out.println("[Server] Received BOT_COUNT_CHANGED from " + username);
+        
         if (currentRoom == null) {
             sendError("You are not in a room!");
+            System.out.println("[Server] ❌ " + username + " is not in a room yet!");
             return;
         }
         
         if (!currentRoom.getHost().equals(this)) {
             sendError("Only host can change bot count!");
+            System.out.println("[Server] ❌ " + username + " is not the host!");
             return;
         }
         
@@ -365,7 +370,7 @@ public class ClientHandler implements Runnable {
         }
         
         currentRoom.setBotCount(botCount);
-        System.out.println("Host " + username + " set bot count to: " + botCount);
+        System.out.println("[Server] ✅ Host " + username + " set bot count to: " + botCount);
         
         // Broadcast to all players in room
         Packet resp = new Packet(PacketType.BOT_COUNT_CHANGED);
